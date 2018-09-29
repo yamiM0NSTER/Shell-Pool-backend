@@ -1,3 +1,9 @@
+import { cfg } from './src/configReader';
+import {Logger} from './src/logger';
+import './src/exceptionWriter';
+import './src/utils';
+import * as shareTrust from './src/shareTrust';
+
 let msg = 'hi there';
 console.log(msg);
 console.log(msg);
@@ -5,5 +11,10 @@ console.log(msg);
 console.log(msg);
 console.log(msg);
 console.log(msg);
-console.log(msg);
+console.log(`${msg}`);
+console.log(shareTrust);
+let validModules = ['pool', 'api', 'unlocker', 'payments', 'chartsDataCollector'];
+let moduleName = 'whatever';
+Logger.Log('error', 'test', 'Invalid module "%s", valid modules: %s', [moduleName, validModules.join(', ')]);
+//console.log(cfg.config);
 msg = 'ddd';
