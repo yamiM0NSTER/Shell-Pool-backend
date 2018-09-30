@@ -83,4 +83,4 @@ class LoggerClass {
 
 let Logger = new LoggerClass;
 Logger.Init();
-export {Logger};
+export { Logger };

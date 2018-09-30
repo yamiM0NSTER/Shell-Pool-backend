@@ -117,23 +117,65 @@ function batchRpc(host: any, port: any, array: any, callback: any) {
     jsonHttpRequest(host, port, data, callback);
 }
 
-module.exports = function (daemonConfig: any, walletConfig: any, poolApiConfig: any) {
-    return {
-        batchRpcDaemon: function (batchArray: any, callback: any) {
-            batchRpc(daemonConfig.host, daemonConfig.port, batchArray, callback)
-        },
-        rpcDaemon: function (method: any, params: any, callback: any) {
-            rpc(daemonConfig.host, daemonConfig.port, method, params, callback)
-        },
-        rpcWallet: function (method: any, params: any, callback: any) {
-            rpc(walletConfig.host, walletConfig.port, method, params, callback,
-                walletConfig.password)
-        },
-        pool: function (method: any, callback: any) {
-            if (poolApiConfig.host == undefined)
-                poolApiConfig.host = '127.0.0.1';
-            jsonHttpRequest(poolApiConfig.host, poolApiConfig.port, '', callback, method);
-        },
-        jsonHttpRequest: jsonHttpRequest
+
+
+// module.exports = function (daemonConfig: any, walletConfig: any, poolApiConfig: any) {
+//     return {
+//         batchRpcDaemon: function (batchArray: any, callback: any) {
+//             batchRpc(daemonConfig.host, daemonConfig.port, batchArray, callback)
+//         },
+//         rpcDaemon: function (method: any, params: any, callback: any) {
+//             rpc(daemonConfig.host, daemonConfig.port, method, params, callback)
+//         },
+//         rpcWallet: function (method: any, params: any, callback: any) {
+//             rpc(walletConfig.host, walletConfig.port, method, params, callback,
+//                 walletConfig.password)
+//         },
+//         pool: function (method: any, callback: any) {
+//             if (poolApiConfig.host == undefined)
+//                 poolApiConfig.host = '127.0.0.1';
+//             jsonHttpRequest(poolApiConfig.host, poolApiConfig.port, '', callback, method);
+//         },
+//         // jsonHttpRequest: jsonHttpRequest,
+//         jsonHttpRequest: function(host: any, port: any, data: any, callback: any, path?: any) {
+//             jsonHttpRequest(host, port, data, callback, path);
+//         }
+//     }
+// }
+
+class apiInterfaces {
+    daemonConfig: any;
+    walletConfig: any;
+    poolApiConfig: any;
+
+    constructor(daemonConfig: any, walletConfig: any, poolApiConfig: any) {
+        this.daemonConfig = daemonConfig;
+        this.walletConfig = walletConfig;
+        this.poolApiConfig = poolApiConfig;
+    }
+
+    batchRpcDaemon(batchArray: any, callback: any) {
+        batchRpc(this.daemonConfig.host, this.daemonConfig.port, batchArray, callback);
+    }
+
+    rpcDaemon(method: any, params: any, callback: any) {
+        rpc(this.daemonConfig.host, this.daemonConfig.port, method, params, callback);
+    }
+
+    rpcWallet(method: any, params: any, callback: any) {
+        rpc(this.walletConfig.host, this.walletConfig.port, method, params, callback,
+            this.walletConfig.password);
+    }
+
+    pool(method: any, callback: any) {
+        if (this.poolApiConfig.host == undefined)
+            this.poolApiConfig.host = '127.0.0.1';
+        jsonHttpRequest(this.poolApiConfig.host, this.poolApiConfig.port, '', callback, method);
+    }
+
+    jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: any) {
+        jsonHttpRequest(host, port, data, callback, path);
     }
 }
+
+export default apiInterfaces;
