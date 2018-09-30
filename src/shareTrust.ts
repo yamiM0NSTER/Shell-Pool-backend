@@ -74,30 +74,31 @@ setInterval(function () {
 }, 300000)
 
 function isTrusted(ip: string, address: string): boolean {
-    var shareTrustIP = minerShareTrust.ip[ip];
-    var shareTrustAddress = minerShareTrust.address[address];
+    let shareTrustIP = minerShareTrust.ip[ip];
+    let shareTrustAddress = minerShareTrust.address[address];
     if (shareTrustIP && shareTrustAddress) {
         return (shareTrustIP.trusted && shareTrustAddress.trusted);
     }
     return false;
 }
 
-function checkTrust(ip: string, address: string, difficulty: any) {
-    var dateNowSeconds = Date.now() / 1000 | 0
-    var shareTrustIP = minerShareTrust.ip[ip];
-    var shareTrustAddress = minerShareTrust.address[address];
+function checkTrust(ip: string, address: string, difficulty: number): boolean {
+    let dateNowSeconds = Date.now() / 1000 | 0
+    let shareTrustIP = minerShareTrust.ip[ip];
+    let shareTrustAddress = minerShareTrust.address[address];
     if (shareTrustIP && shareTrustAddress) {
-        var rand = Math.random()
-        var ipPastThresholds = dateNowSeconds - shareTrustIP.trustBeginSeconds > shareTrustIP.minUntrustedSeconds && shareTrustIP.untrustedShareThreshold <= 0;
-        var addressPastThresholds = dateNowSeconds - shareTrustAddress.trustBeginSeconds > shareTrustAddress.minUntrustedSeconds && shareTrustAddress.untrustedShareThreshold <= 0
-        var inShareWindow = dateNowSeconds - shareTrustAddress.lastShareSeconds < shareTrustConfig.maxShareWindow && dateNowSeconds - shareTrustIP.lastShareSeconds < shareTrustConfig.maxShareWindow
+        let rand = Math.random();
+        let ipPastThresholds = dateNowSeconds - shareTrustIP.trustBeginSeconds > shareTrustIP.minUntrustedSeconds && shareTrustIP.untrustedShareThreshold <= 0;
+        let addressPastThresholds = dateNowSeconds - shareTrustAddress.trustBeginSeconds > shareTrustAddress.minUntrustedSeconds && shareTrustAddress.untrustedShareThreshold <= 0
+        let inShareWindow = dateNowSeconds - shareTrustAddress.lastShareSeconds < shareTrustConfig.maxShareWindow && dateNowSeconds - shareTrustIP.lastShareSeconds < shareTrustConfig.maxShareWindow
         if (ipPastThresholds && addressPastThresholds && inShareWindow && shareTrustIP.trustProbability >= shareTrustMaxTrustPercent && shareTrustAddress.trustProbability >= shareTrustMaxTrustPercent) {
             if (!shareTrustIP.trusted || !shareTrustAddress.trusted) {
                 Logger.Log('info', logSystem, 'Miner is now share trusted %s@%s', [address, ip]);
             }
             shareTrustIP.trusted = shareTrustAddress.trusted = true;
         }
-        if ((difficulty < shareTrustConfig.maxTrustedDifficulty) && (inShareWindow) && (ipPastThresholds && rand < shareTrustIP.trustProbability)
+
+        if (difficulty < shareTrustConfig.maxTrustedDifficulty && inShareWindow && (ipPastThresholds && rand < shareTrustIP.trustProbability)
             && (addressPastThresholds && rand < shareTrustAddress.trustProbability)) {
             return true;
         }
@@ -105,9 +106,10 @@ function checkTrust(ip: string, address: string, difficulty: any) {
     return false;
 }
 
-function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: any) {
+function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: boolean) {
     let dateNowSeconds: number = Date.now() / 1000 | 0;
 
+    // TODO: fix this puke-worthy function
     if (!minerShareTrust.ip[ip]) {
         minerShareTrust.ip[ip] = {
             untrustedShareThreshold: shareTrustConfig.minUntrustedShares,
@@ -139,8 +141,8 @@ function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: a
         }
     }
 
-    let shareTrustIP = minerShareTrust.ip[ip]
-    let shareTrustAddress = minerShareTrust.address[address]
+    let shareTrustIP = minerShareTrust.ip[ip];
+    let shareTrustAddress = minerShareTrust.address[address];
     if (isIPC === undefined) {
         isIPC = false;
     }
@@ -148,11 +150,10 @@ function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: a
     if (shareTrustIP && shareTrustAddress) {
         if (shareValidated) {
             if (dateNowSeconds - shareTrustAddress.lastShareSeconds >= shareTrustConfig.maxShareWindow
-                || dateNowSeconds - shareTrustIP.lastShareSeconds >= shareTrustConfig.maxShareWindow)
-            {
-                if (shareTrustIP.untrustedShareThreshold < shareTrustConfig.minUntrustedShares) 
+                || dateNowSeconds - shareTrustIP.lastShareSeconds >= shareTrustConfig.maxShareWindow) {
+                if (shareTrustIP.untrustedShareThreshold < shareTrustConfig.minUntrustedShares)
                     shareTrustIP.untrustedShareThreshold = shareTrustConfig.minUntrustedShares;
-                     
+
                 if (shareTrustAddress.untrustedShareThreshold < shareTrustConfig.minUntrustedShares)
                     shareTrustAddress.untrustedShareThreshold = shareTrustConfig.minUntrustedShares;
 
@@ -167,18 +168,27 @@ function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: a
                 shareTrustAddress.trustProbability += shareTrustProbabilityStepPercent;
                 shareTrustAddress.probabilityStepWindowBeginSeconds = dateNowSeconds;
             }
-            if (shareTrustIP.currentPenaltyMultiplier > shareTrustConfig.minPenaltyMultiplier && dateNowSeconds - shareTrustIP.penaltyStepDownBeginSeconds > shareTrustConfig.penaltyStepDownWindow) {
+            if (shareTrustIP.currentPenaltyMultiplier > shareTrustConfig.minPenaltyMultiplier
+                && dateNowSeconds - shareTrustIP.penaltyStepDownBeginSeconds > shareTrustConfig.penaltyStepDownWindow) {
                 shareTrustIP.currentPenaltyMultiplier -= shareTrustConfig.penaltyMultiplierStep;
                 shareTrustIP.penaltyStepDownBeginSeconds = dateNowSeconds;
             }
-            if (shareTrustAddress.currentPenaltyMultiplier > shareTrustConfig.minPenaltyMultiplier && dateNowSeconds - shareTrustAddress.penaltyStepDownBeginSeconds > shareTrustConfig.penaltyStepDownWindow) {
+            if (shareTrustAddress.currentPenaltyMultiplier > shareTrustConfig.minPenaltyMultiplier
+                && dateNowSeconds - shareTrustAddress.penaltyStepDownBeginSeconds > shareTrustConfig.penaltyStepDownWindow) {
                 shareTrustAddress.currentPenaltyMultiplier -= shareTrustConfig.penaltyMultiplierStep;
                 shareTrustAddress.penaltyStepDownBeginSeconds = dateNowSeconds;
             }
-            if (shareTrustIP.trustProbability > shareTrustMaxTrustPercent) { shareTrustIP.trustProbability = shareTrustMaxTrustPercent }
-            if (shareTrustAddress.trustProbability > shareTrustMaxTrustPercent) { shareTrustAddress.trustProbability = shareTrustMaxTrustPercent }
-            if (shareTrustIP.untrustedShareThreshold > 0) { shareTrustIP.untrustedShareThreshold-- }
-            if (shareTrustAddress.untrustedShareThreshold > 0) { shareTrustAddress.untrustedShareThreshold-- }
+            
+            if (shareTrustIP.trustProbability > shareTrustMaxTrustPercent)
+                shareTrustIP.trustProbability = shareTrustMaxTrustPercent;
+
+            if (shareTrustAddress.trustProbability > shareTrustMaxTrustPercent)
+                shareTrustAddress.trustProbability = shareTrustMaxTrustPercent;
+
+            if (shareTrustIP.untrustedShareThreshold > 0)
+                shareTrustIP.untrustedShareThreshold--;
+            if (shareTrustAddress.untrustedShareThreshold > 0)
+                shareTrustAddress.untrustedShareThreshold--;
         }
         else {
             shareTrustIP.trustProbability = shareTrustAddress.trustProbability = 0;
@@ -193,13 +203,13 @@ function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: a
                 shareTrustAddress.currentPenaltyMultiplier += shareTrustConfig.penaltyMultiplierStep;
                 shareTrustAddress.penaltyStepUpBeginSeconds = dateNowSeconds;
             }
-            shareTrustIP.untrustedShareThreshold = (shareTrustConfig.minUntrustedShares * shareTrustIP.currentPenaltyMultiplier);
-            shareTrustAddress.untrustedShareThreshold = (shareTrustConfig.minUntrustedShares * shareTrustAddress.currentPenaltyMultiplier);
-            shareTrustIP.minUntrustedSeconds = (shareTrustConfig.minUntrustedSeconds * shareTrustIP.currentPenaltyMultiplier);
-            shareTrustAddress.minUntrustedSeconds = (shareTrustConfig.minUntrustedSeconds * shareTrustAddress.currentPenaltyMultiplier);
+            shareTrustIP.untrustedShareThreshold = shareTrustConfig.minUntrustedShares * shareTrustIP.currentPenaltyMultiplier;
+            shareTrustAddress.untrustedShareThreshold = shareTrustConfig.minUntrustedShares * shareTrustAddress.currentPenaltyMultiplier;
+            shareTrustIP.minUntrustedSeconds = shareTrustConfig.minUntrustedSeconds * shareTrustIP.currentPenaltyMultiplier;
+            shareTrustAddress.minUntrustedSeconds = shareTrustConfig.minUntrustedSeconds * shareTrustAddress.currentPenaltyMultiplier;
 
             if (shareTrustIP.trusted && shareTrustAddress.trusted)
-                Logger.Log('warn', logSystem, 'Share trust broken by %s@%s', [address, ip])
+                Logger.Log('warn', logSystem, 'Share trust broken by %s@%s', [address, ip]);
 
             shareTrustIP.trusted = shareTrustAddress.trusted = false;
 
@@ -209,6 +219,7 @@ function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: a
             else if (dateNowSeconds - shareTrustIP.ipcRateBeginSeconds > shareTrustConfig.maxIPCRate
                 && dateNowSeconds - shareTrustIP.ipcRateBeginSeconds > shareTrustConfig.maxIPCRate) {
                 shareTrustIP.ipcRateBeginSeconds = shareTrustAddress.ipcRateBeginSeconds = dateNowSeconds;
+                // TODO: better alternative?
                 (<any>process).send({
                     type: 'shareTrust',
                     ip: ip,
