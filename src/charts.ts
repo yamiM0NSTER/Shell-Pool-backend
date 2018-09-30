@@ -56,7 +56,7 @@ function convertPaymentsDataToChart(paymentsData: any) {
     return data
 }
 
-function getUserChartsData(address: string, paymentsData: any, callback: any) {
+export function getUserChartsData(address: string, paymentsData: any, callback: any) {
     var stats = {}
     var chartsFuncs: any = {
         hashrate: function (callback: any) {
@@ -233,7 +233,7 @@ function getCoinProfit(callback: (e: any, p?: any) => any) {
     })
 }
 
-function getPoolChartsData(callback: any) {
+export function getPoolChartsData(callback: any) {
     let chartsNames: any = [];
     let redisKeys = [];
     for (let chartName in globalAny.config.config.charts.pool) {
@@ -263,6 +263,6 @@ function getPoolChartsData(callback: any) {
 module.exports = {
     startDataCollectors: startDataCollectors,
     getUserChartsData: getUserChartsData,
-    getPoolChartsData: getPoolChartsData,
+    //getPoolChartsData: getPoolChartsData,
     getUserWorkerChartsData: getUserWorkerChartsData
 }

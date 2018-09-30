@@ -141,7 +141,8 @@ class apiInterfaces {
     constructor(daemonConfig, walletConfig, poolApiConfig) {
         this.daemonConfig = daemonConfig;
         this.walletConfig = walletConfig;
-        this.poolApiConfig = poolApiConfig;
+        if (poolApiConfig)
+            this.poolApiConfig = poolApiConfig;
     }
     batchRpcDaemon(batchArray, callback) {
         batchRpc(this.daemonConfig.host, this.daemonConfig.port, batchArray, callback);

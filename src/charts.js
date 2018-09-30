@@ -67,6 +67,7 @@ function getUserChartsData(address, paymentsData, callback) {
     }
     async_1.default.parallel(chartsFuncs, callback);
 }
+exports.getUserChartsData = getUserChartsData;
 // unused?
 function getUserWorkerChartsData(address, paymentsData, callback) {
     var stats = {};
@@ -235,10 +236,11 @@ function getPoolChartsData(callback) {
         callback(null, {});
     }
 }
+exports.getPoolChartsData = getPoolChartsData;
 module.exports = {
     startDataCollectors: startDataCollectors,
     getUserChartsData: getUserChartsData,
-    getPoolChartsData: getPoolChartsData,
+    //getPoolChartsData: getPoolChartsData,
     getUserWorkerChartsData: getUserWorkerChartsData
 };
 //# sourceMappingURL=charts.js.map
