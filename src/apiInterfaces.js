@@ -7,7 +7,7 @@ const http_1 = __importDefault(require("http"));
 const https_1 = __importDefault(require("https"));
 function jsonHttpRequest(host, port, data, callback, path) {
     path = path || '/json_rpc';
-    var options = {
+    let options = {
         hostname: host,
         port: port,
         path: path,
@@ -22,13 +22,13 @@ function jsonHttpRequest(host, port, data, callback, path) {
     // TODO: wrapper or similar method to commented
     if (port == 443) {
         req = https_1.default.request(options, function (res) {
-            var replyData = '';
+            let replyData = '';
             res.setEncoding('utf8');
             res.on('data', function (chunk) {
                 replyData += chunk;
             });
             res.on('end', function () {
-                var replyJson;
+                let replyJson;
                 try {
                     replyJson = JSON.parse(replyData);
                 }
@@ -48,7 +48,7 @@ function jsonHttpRequest(host, port, data, callback, path) {
                 replyData += chunk;
             });
             res.on('end', function () {
-                var replyJson;
+                let replyJson;
                 try {
                     replyJson = JSON.parse(replyData);
                 }
@@ -92,7 +92,7 @@ function rpc(host, port, method, params, callback, password) {
     if (password !== undefined) {
         request['password'] = password;
     }
-    var data = JSON.stringify(request);
+    let data = JSON.stringify(request);
     jsonHttpRequest(host, port, data, function (error, replyJson) {
         if (error) {
             callback(error);
@@ -114,28 +114,29 @@ function batchRpc(host, port, array, callback) {
     let data = JSON.stringify(rpcArray);
     jsonHttpRequest(host, port, data, callback);
 }
-module.exports = function (daemonConfig, walletConfig, poolApiConfig) {
-    return {
-        batchRpcDaemon: function (batchArray, callback) {
-            batchRpc(daemonConfig.host, daemonConfig.port, batchArray, callback);
-        },
-        rpcDaemon: function (method, params, callback) {
-            rpc(daemonConfig.host, daemonConfig.port, method, params, callback);
-        },
-        rpcWallet: function (method, params, callback) {
-            rpc(walletConfig.host, walletConfig.port, method, params, callback, walletConfig.password);
-        },
-        pool: function (method, callback) {
-            if (poolApiConfig.host == undefined)
-                poolApiConfig.host = '127.0.0.1';
-            jsonHttpRequest(poolApiConfig.host, poolApiConfig.port, '', callback, method);
-        },
-        // jsonHttpRequest: jsonHttpRequest,
-        jsonHttpRequest: function (host, port, data, callback, path) {
-            jsonHttpRequest(host, port, data, callback, path);
-        }
-    };
-};
+// module.exports = function (daemonConfig: any, walletConfig: any, poolApiConfig: any) {
+//     return {
+//         batchRpcDaemon: function (batchArray: any, callback: any) {
+//             batchRpc(daemonConfig.host, daemonConfig.port, batchArray, callback)
+//         },
+//         rpcDaemon: function (method: any, params: any, callback: any) {
+//             rpc(daemonConfig.host, daemonConfig.port, method, params, callback)
+//         },
+//         rpcWallet: function (method: any, params: any, callback: any) {
+//             rpc(walletConfig.host, walletConfig.port, method, params, callback,
+//                 walletConfig.password)
+//         },
+//         pool: function (method: any, callback: any) {
+//             if (poolApiConfig.host == undefined)
+//                 poolApiConfig.host = '127.0.0.1';
+//             jsonHttpRequest(poolApiConfig.host, poolApiConfig.port, '', callback, method);
+//         },
+//         // jsonHttpRequest: jsonHttpRequest,
+//         jsonHttpRequest: function(host: any, port: any, data: any, callback: any, path?: any) {
+//             jsonHttpRequest(host, port, data, callback, path);
+//         }
+//     }
+// }
 class apiInterfaces {
     constructor(daemonConfig, walletConfig, poolApiConfig) {
         this.daemonConfig = daemonConfig;

@@ -1,5 +1,9 @@
-import { cfg } from './configReader';
+//import cfg from './configReader';
 import { Logger } from './logger';
+import { Global } from './defines';
+
+const globalAny: Global = <Global>global;
+
 
 type MinerShareInfo = {
     lastShareSeconds: number,
@@ -26,7 +30,7 @@ let minerShareTrust: MinerShareTrust = {
 };
 
 let logSystem = 'shareTrust';
-let shareTrustConfig = cfg.config.poolServer.shareTrust;
+let shareTrustConfig = globalAny.config.config.poolServer.shareTrust;
 let shareTrustEnabled = shareTrustConfig && shareTrustConfig.enabled;
 let shareTrustProbabilityStepPercent = shareTrustEnabled ? shareTrustConfig.probabilityStepPercent / 100 : 0;
 let shareTrustMaxTrustPercent = shareTrustEnabled ? shareTrustConfig.maxTrustPercent / 100 : 0;
@@ -40,7 +44,7 @@ process.on('message', function (message) {
 });
 
 setInterval(function () {
-    let dateNowSeconds = Date.now() / 1000 | 0
+    let dateNowSeconds = Date.now() / 1000 | 0;
 
     if (shareTrustEnabled) {
         let maxShareTrustAge = shareTrustConfig.maxAge;

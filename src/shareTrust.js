@@ -1,13 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const configReader_1 = require("./configReader");
+//import cfg from './configReader';
 const logger_1 = require("./logger");
+const globalAny = global;
 let minerShareTrust = {
     ip: {},
     address: {}
 };
 let logSystem = 'shareTrust';
-let shareTrustConfig = configReader_1.cfg.config.poolServer.shareTrust;
+let shareTrustConfig = globalAny.config.config.poolServer.shareTrust;
 let shareTrustEnabled = shareTrustConfig && shareTrustConfig.enabled;
 let shareTrustProbabilityStepPercent = shareTrustEnabled ? shareTrustConfig.probabilityStepPercent / 100 : 0;
 let shareTrustMaxTrustPercent = shareTrustEnabled ? shareTrustConfig.maxTrustPercent / 100 : 0;

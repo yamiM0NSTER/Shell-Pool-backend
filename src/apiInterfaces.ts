@@ -4,7 +4,7 @@ import https from 'https';
 function jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: any) {
     path = path || '/json_rpc';
 
-    var options = {
+    let options = {
         hostname: host,
         port: port,
         path: path,
@@ -20,13 +20,13 @@ function jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: 
     // TODO: wrapper or similar method to commented
     if (port == 443) {
         req = https.request(options, function (res) {
-            var replyData = ''
+            let replyData = ''
             res.setEncoding('utf8')
             res.on('data', function (chunk) {
                 replyData += chunk;
             });
             res.on('end', function () {
-                var replyJson
+                let replyJson
                 try {
                     replyJson = JSON.parse(replyData);
                 } catch (e) {
@@ -47,7 +47,7 @@ function jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: 
                 replyData += chunk
             })
             res.on('end', function () {
-                var replyJson
+                let replyJson
                 try {
                     replyJson = JSON.parse(replyData)
                 } catch (e) {
@@ -93,7 +93,7 @@ function rpc(host: any, port: any, method: any, params: any, callback: any, pass
     if (password !== undefined) {
         request['password'] = password;
     }
-    var data = JSON.stringify(request)
+    let data = JSON.stringify(request);
     jsonHttpRequest(host, port, data, function (error: any, replyJson: any) {
         if (error) {
             callback(error);

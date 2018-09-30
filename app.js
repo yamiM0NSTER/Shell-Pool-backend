@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -6,11 +9,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const configReader_1 = require("./src/configReader");
+const configReader_1 = __importDefault(require("./src/configReader"));
+const globalAny = global;
+globalAny.config = new configReader_1.default();
+globalAny.config.ReadConfig();
 const logger_1 = require("./src/logger");
 require("./src/exceptionWriter");
 require("./src/utils");
@@ -24,11 +27,11 @@ console.log(msg);
 console.log(msg);
 console.log(msg);
 console.log(`${msg}`);
-let api = new apiInterfaces_1.default(configReader_1.cfg.config.daemon, configReader_1.cfg.config.wallet, configReader_1.cfg.config.api);
+let api = new apiInterfaces_1.default(globalAny.config.config.daemon, globalAny.config.config.wallet, globalAny.config.config.api);
 function getCoinPrice(callback) {
     api.jsonHttpRequest('api.cryptonator.com', 443, '', function (error, response) {
         callback(response.error ? response.error : error, response.success ? +response.ticker.price : null);
-    }, '/api/ticker/' + configReader_1.cfg.config.symbol.toLowerCase() + '-usd');
+    }, '/api/ticker/' + globalAny.config.config.symbol.toLowerCase() + '-usd');
 }
 getCoinPrice(function (error, price) {
     if (error) {

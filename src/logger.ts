@@ -1,8 +1,11 @@
-import { cfg } from "./configReader";
+//import cfg from "./configReader";
 import fs from 'fs';
 import util from 'util';
 import dateFormat from 'dateformat';
 import clc from 'cli-color';
+
+import { Global } from './defines';
+const globalAny: Global = <Global>global;
 
 type SeverityMap = {
     [key: string]: clc.Format;
@@ -15,7 +18,7 @@ let severityMap: SeverityMap = {
 }
 
 class LoggerClass {
-    logDir: string = cfg.config.logging.files.directory;
+    logDir: string = globalAny.config.config.logging.files.directory;
 
     // TODO: SeverityLevels enum
     severityLevels = ['info', 'warn', 'error'];
@@ -27,9 +30,9 @@ class LoggerClass {
     }
 
     // no longer use :any
-    Log(severity: any, system: any, text: any, data: any) {
-        let logConsole: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(cfg.config.logging.console.level);
-        let logFiles: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(cfg.config.logging.files.level);
+    Log(severity: any, system: any, text: any, data?: any) {
+        let logConsole: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(globalAny.config.config.logging.console.level);
+        let logFiles: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(globalAny.config.config.logging.files.level);
 
         if (!logConsole && !logFiles)
             return;
@@ -43,7 +46,7 @@ class LoggerClass {
         }
 
         if (logConsole) {
-            if (cfg.config.logging.console.colors)
+            if (globalAny.config.config.logging.console.colors)
                 console.log(`${severityMap[severity](time)} ${clc.white.bold('[' + system + ']')} ${formattedMessage}`);
             else
                 console.log(`${time} [${system}] ${formattedMessage}`);
@@ -77,7 +80,7 @@ class LoggerClass {
             }
         }
 
-        setInterval(this.IntervalFunc, cfg.config.logging.files.flushInterval * 1000);
+        setInterval(this.IntervalFunc, globalAny.config.config.logging.files.flushInterval * 1000);
     }
 }
 

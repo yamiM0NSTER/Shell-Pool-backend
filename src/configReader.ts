@@ -66,8 +66,5 @@ class Config {
     version: any = 'v1.1.4';
 }
 
-let cfg = new Config();
-cfg.ReadConfig();
-
-export { cfg };
+export default Config;
 

@@ -63,7 +63,5 @@ class Config {
         return 'config.json';
     }
 }
-let cfg = new Config();
-exports.cfg = cfg;
-cfg.ReadConfig();
+exports.default = Config;
 //# sourceMappingURL=configReader.js.map

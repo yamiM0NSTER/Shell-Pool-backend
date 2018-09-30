@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const configReader_1 = require("./configReader");
+//import cfg from "./configReader";
 const fs_1 = __importDefault(require("fs"));
 const util_1 = __importDefault(require("util"));
 const dateformat_1 = __importDefault(require("dateformat"));
 const cli_color_1 = __importDefault(require("cli-color"));
+const globalAny = global;
 let severityMap = {
     'info': cli_color_1.default.blue,
     'warn': cli_color_1.default.yellow,
@@ -15,15 +16,15 @@ let severityMap = {
 };
 class LoggerClass {
     constructor() {
-        this.logDir = configReader_1.cfg.config.logging.files.directory;
+        this.logDir = globalAny.config.config.logging.files.directory;
         // TODO: SeverityLevels enum
         this.severityLevels = ['info', 'warn', 'error'];
         this.pendingWrites = {};
     }
     // no longer use :any
     Log(severity, system, text, data) {
-        let logConsole = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(configReader_1.cfg.config.logging.console.level);
-        let logFiles = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(configReader_1.cfg.config.logging.files.level);
+        let logConsole = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(globalAny.config.config.logging.console.level);
+        let logFiles = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(globalAny.config.config.logging.files.level);
         if (!logConsole && !logFiles)
             return;
         let time = dateformat_1.default(new Date(), 'yyyy-mm-dd HH:MM:ss');
@@ -33,7 +34,7 @@ class LoggerClass {
             formattedMessage = util_1.default.format.apply(null, data);
         }
         if (logConsole) {
-            if (configReader_1.cfg.config.logging.console.colors)
+            if (globalAny.config.config.logging.console.colors)
                 console.log(`${severityMap[severity](time)} ${cli_color_1.default.white.bold('[' + system + ']')} ${formattedMessage}`);
             else
                 console.log(`${time} [${system}] ${formattedMessage}`);
@@ -63,7 +64,7 @@ class LoggerClass {
                 throw e;
             }
         }
-        setInterval(this.IntervalFunc, configReader_1.cfg.config.logging.files.flushInterval * 1000);
+        setInterval(this.IntervalFunc, globalAny.config.config.logging.files.flushInterval * 1000);
     }
 }
 let Logger = new LoggerClass;
