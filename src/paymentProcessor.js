@@ -5,19 +5,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const async_1 = __importDefault(require("async"));
 const apiInterfaces_1 = __importDefault(require("./apiInterfaces"));
-const logger_1 = require("./logger");
-const globalAny = global;
-let api = new apiInterfaces_1.default(globalAny.config.config.daemon, globalAny.config.config.wallet, globalAny.config.config.api);
+//import { Logger } from './logger';
+const globalstate_1 = require("./globalstate");
+let Logger = globalstate_1.GlobalState.Logger;
+let config = globalstate_1.GlobalState.config.config;
+let redisClient = globalstate_1.GlobalState.redisClient;
+//var fs = require('fs')
+//var async = require('async')
+//var apiInterfaces = require('./apiInterfaces.js')(config.daemon, config.wallet, config.api)
+// TODO: better usage than global
+//import { Global } from './defines';
+//const globalAny: Global = <Global>global;
+let api = new apiInterfaces_1.default(config.daemon, config.wallet, config.api);
 var logSystem = 'payments';
 require('./exceptionWriter.js')(logSystem);
-logger_1.Logger.Log('info', logSystem, 'Started');
+Logger.Log('info', logSystem, 'Started');
 function runInterval() {
     async_1.default.waterfall([
         // Get worker keys
         function (callback) {
-            globalAny.redisClient.keys(globalAny.config.config.coin + ':workers:*', function (error, result) {
+            redisClient.keys(config.coin + ':workers:*', function (error, result) {
                 if (error) {
-                    logger_1.Logger.Log('error', logSystem, 'Error trying to get worker balances from redis %j', [error]);
+                    Logger.Log('error', logSystem, 'Error trying to get worker balances from redis %j', [error]);
                     callback(true);
                     return;
                 }
@@ -29,9 +38,9 @@ function runInterval() {
             var redisCommands = keys.map(function (k) {
                 return ['hmget', k, 'balance', 'minPayoutLevel'];
             });
-            globalAny.redisClient.multi(redisCommands).exec(function (error, replies) {
+            redisClient.multi(redisCommands).exec(function (error, replies) {
                 if (error) {
-                    logger_1.Logger.Log('error', logSystem, 'Error with getting balances from redis %j', [error]);
+                    Logger.Log('error', logSystem, 'Error with getting balances from redis %j', [error]);
                     callback(true);
                     return;
                 }
@@ -42,8 +51,8 @@ function runInterval() {
                     let workerId = parts[parts.length - 1];
                     let data = replies[i];
                     balances[workerId] = parseInt(data[0]) || 0;
-                    minPayoutLevel[workerId] = parseFloat(data[1]) || globalAny.config.config.payments.minPayment;
-                    logger_1.Logger.Log('info', logSystem, 'Using payout level %d for worker %s (default: %d)', [minPayoutLevel[workerId], workerId, globalAny.config.config.payments.minPayment]);
+                    minPayoutLevel[workerId] = parseFloat(data[1]) || config.payments.minPayment;
+                    Logger.Log('info', logSystem, 'Using payout level %d for worker %s (default: %d)', [minPayoutLevel[workerId], workerId, config.payments.minPayment]);
                 }
                 callback(null, balances, minPayoutLevel);
             });
@@ -54,7 +63,7 @@ function runInterval() {
             for (let worker in balances) {
                 let balance = balances[worker];
                 if (balance >= minPayoutLevel[worker]) {
-                    let remainder = balance % globalAny.config.config.payments.denomination;
+                    let remainder = balance % config.payments.denomination;
                     let payout = balance - remainder;
                     if (payout < 0)
                         continue;
@@ -62,7 +71,7 @@ function runInterval() {
                 }
             }
             if (Object.keys(payments).length === 0) {
-                logger_1.Logger.Log('info', logSystem, 'No workers\' balances reached the minimum payment threshold');
+                Logger.Log('info', logSystem, 'No workers\' balances reached the minimum payment threshold');
                 callback(true);
                 return;
             }
@@ -72,26 +81,26 @@ function runInterval() {
             var commandIndex = 0;
             for (let worker in payments) {
                 let amount = payments[worker];
-                if (globalAny.config.config.payments.maxTransactionAmount && amount + commandAmount > globalAny.config.config.payments.maxTransactionAmount)
-                    amount = globalAny.config.config.payments.maxTransactionAmount - commandAmount;
+                if (config.payments.maxTransactionAmount && amount + commandAmount > config.payments.maxTransactionAmount)
+                    amount = config.payments.maxTransactionAmount - commandAmount;
                 if (!transferCommands[commandIndex]) {
                     transferCommands[commandIndex] = {
                         redis: [],
                         amount: 0,
                         rpc: {
                             transfers: [],
-                            fee: globalAny.config.config.payments.transferFee,
+                            fee: config.payments.transferFee,
                         }
                     };
                 }
                 transferCommands[commandIndex].rpc.transfers.push({ amount: amount, address: worker });
-                transferCommands[commandIndex].redis.push(['hincrby', globalAny.config.config.coin + ':workers:' + worker, 'balance', -amount]);
-                transferCommands[commandIndex].redis.push(['hincrby', globalAny.config.config.coin + ':workers:' + worker, 'paid', amount]);
+                transferCommands[commandIndex].redis.push(['hincrby', config.coin + ':workers:' + worker, 'balance', -amount]);
+                transferCommands[commandIndex].redis.push(['hincrby', config.coin + ':workers:' + worker, 'paid', amount]);
                 transferCommands[commandIndex].amount += amount;
                 addresses++;
                 commandAmount += amount;
-                if (addresses >= globalAny.config.config.payments.maxAddresses
-                    || (globalAny.config.config.payments.maxTransactionAmount && commandAmount >= globalAny.config.config.payments.maxTransactionAmount)) {
+                if (addresses >= config.payments.maxAddresses
+                    || (config.payments.maxTransactionAmount && commandAmount >= config.payments.maxTransactionAmount)) {
                     commandIndex++;
                     addresses = 0;
                     commandAmount = 0;
@@ -101,14 +110,14 @@ function runInterval() {
             async_1.default.filter(transferCommands, function (transferCmd, cback) {
                 api.rpcWallet('sendTransaction', transferCmd.rpc, function (error, result) {
                     if (error) {
-                        logger_1.Logger.Log('error', logSystem, 'Error with sendTransaction RPC request to wallet daemon %j', [error]);
-                        logger_1.Logger.Log('error', logSystem, 'Payments failed to send to %j', transferCmd.rpc.transfers);
+                        Logger.Log('error', logSystem, 'Error with sendTransaction RPC request to wallet daemon %j', [error]);
+                        Logger.Log('error', logSystem, 'Payments failed to send to %j', transferCmd.rpc.transfers);
                         cback(false);
                         return;
                     }
                     let now = (timeOffset++) + Date.now() / 1000 | 0;
                     let txHash = result.transactionHash;
-                    transferCmd.redis.push(['zadd', globalAny.config.config.coin + ':payments:all', now, [
+                    transferCmd.redis.push(['zadd', config.coin + ':payments:all', now, [
                             txHash,
                             transferCmd.amount,
                             transferCmd.rpc.fee,
@@ -116,17 +125,17 @@ function runInterval() {
                         ].join(':')]);
                     for (var i = 0; i < transferCmd.rpc.transfers.length; i++) {
                         var destination = transferCmd.rpc.transfers[i];
-                        transferCmd.redis.push(['zadd', globalAny.config.config.coin + ':payments:' + destination.address, now, [
+                        transferCmd.redis.push(['zadd', config.coin + ':payments:' + destination.address, now, [
                                 txHash,
                                 destination.amount,
                                 transferCmd.rpc.fee,
                             ].join(':')]);
                     }
-                    logger_1.Logger.Log('info', logSystem, 'Payments sent via wallet daemon %j', [result]);
-                    globalAny.redisClient.multi(transferCmd.redis).exec(function (error, replies) {
+                    Logger.Log('info', logSystem, 'Payments sent via wallet daemon %j', [result]);
+                    redisClient.multi(transferCmd.redis).exec(function (error, replies) {
                         if (error) {
-                            logger_1.Logger.Log('error', logSystem, 'Super critical error! Payments sent yet failing to update balance in redis, double payouts likely to happen %j', [error]);
-                            logger_1.Logger.Log('error', logSystem, 'Double payments likely to be sent to %j', transferCmd.rpc.transfers);
+                            Logger.Log('error', logSystem, 'Super critical error! Payments sent yet failing to update balance in redis, double payouts likely to happen %j', [error]);
+                            Logger.Log('error', logSystem, 'Double payments likely to be sent to %j', transferCmd.rpc.transfers);
                             cback(false);
                             return;
                         }
@@ -135,12 +144,12 @@ function runInterval() {
                 });
             }, function (succeeded) {
                 var failedAmount = transferCommands.length - succeeded.length;
-                logger_1.Logger.Log('info', logSystem, 'Payments splintered and %d successfully sent, %d failed', [succeeded.length, failedAmount]);
+                Logger.Log('info', logSystem, 'Payments splintered and %d successfully sent, %d failed', [succeeded.length, failedAmount]);
                 callback(null);
             });
         }
     ], function (error, result) {
-        setTimeout(runInterval, globalAny.config.config.payments.interval * 1000);
+        setTimeout(runInterval, config.payments.interval * 1000);
     });
 }
 runInterval();

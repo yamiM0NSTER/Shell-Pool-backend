@@ -1,5 +1,8 @@
 //import cfg from './configReader';
-import { Logger } from './logger';
+//import { Logger } from './logger';
+import { GlobalState } from './globalstate';
+let Logger = GlobalState.Logger;
+let config = GlobalState.config.config;
 import { Global } from './defines';
 
 const globalAny: Global = <Global>global;
@@ -30,7 +33,7 @@ let minerShareTrust: MinerShareTrust = {
 };
 
 let logSystem = 'shareTrust';
-let shareTrustConfig = globalAny.config.config.poolServer.shareTrust;
+let shareTrustConfig = config.poolServer.shareTrust;
 let shareTrustEnabled = shareTrustConfig && shareTrustConfig.enabled;
 let shareTrustProbabilityStepPercent = shareTrustEnabled ? shareTrustConfig.probabilityStepPercent / 100 : 0;
 let shareTrustMaxTrustPercent = shareTrustEnabled ? shareTrustConfig.maxTrustPercent / 100 : 0;

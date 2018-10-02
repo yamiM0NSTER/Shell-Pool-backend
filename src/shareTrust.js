@@ -1,14 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 //import cfg from './configReader';
-const logger_1 = require("./logger");
+//import { Logger } from './logger';
+const globalstate_1 = require("./globalstate");
+let Logger = globalstate_1.GlobalState.Logger;
+let config = globalstate_1.GlobalState.config.config;
 const globalAny = global;
 let minerShareTrust = {
     ip: {},
     address: {}
 };
 let logSystem = 'shareTrust';
-let shareTrustConfig = globalAny.config.config.poolServer.shareTrust;
+let shareTrustConfig = config.poolServer.shareTrust;
 let shareTrustEnabled = shareTrustConfig && shareTrustConfig.enabled;
 let shareTrustProbabilityStepPercent = shareTrustEnabled ? shareTrustConfig.probabilityStepPercent / 100 : 0;
 let shareTrustMaxTrustPercent = shareTrustEnabled ? shareTrustConfig.maxTrustPercent / 100 : 0;
@@ -29,7 +32,7 @@ setInterval(function () {
             let minerShareTrustData = minerShareTrust.ip[ip];
             if (dateNowSeconds - minerShareTrustData.lastShareSeconds > maxShareTrustAge) {
                 delete minerShareTrust.ip[ip];
-                logger_1.Logger.Log('info', logSystem, 'ShareTrust data removed for ip %s', [ip]);
+                Logger.Log('info', logSystem, 'ShareTrust data removed for ip %s', [ip]);
             }
             else if (minerShareTrust.ip[ip].trusted) {
                 ipTrustCount++;
@@ -39,14 +42,14 @@ setInterval(function () {
             let minerShareTrustData = minerShareTrust.address[address];
             if (dateNowSeconds - minerShareTrustData.lastShareSeconds > maxShareTrustAge) {
                 delete minerShareTrust.address[address];
-                logger_1.Logger.Log('info', logSystem, 'ShareTrust data removed for address %s', [address]);
+                Logger.Log('info', logSystem, 'ShareTrust data removed for address %s', [address]);
             }
             else if (minerShareTrust.address[address].trusted) {
                 addressTrustCount++;
             }
         }
-        logger_1.Logger.Log('info', logSystem, 'ShareTrust IP: Trusted: %s, Total: %s', [ipTrustCount, Object.keys(minerShareTrust.ip).length]);
-        logger_1.Logger.Log('info', logSystem, 'ShareTrust Address: Trusted: %s, Total: %s', [addressTrustCount, Object.keys(minerShareTrust.address).length]);
+        Logger.Log('info', logSystem, 'ShareTrust IP: Trusted: %s, Total: %s', [ipTrustCount, Object.keys(minerShareTrust.ip).length]);
+        Logger.Log('info', logSystem, 'ShareTrust Address: Trusted: %s, Total: %s', [addressTrustCount, Object.keys(minerShareTrust.address).length]);
     }
 }, 300000);
 function isTrusted(ip, address) {
@@ -68,7 +71,7 @@ function checkTrust(ip, address, difficulty) {
         let inShareWindow = dateNowSeconds - shareTrustAddress.lastShareSeconds < shareTrustConfig.maxShareWindow && dateNowSeconds - shareTrustIP.lastShareSeconds < shareTrustConfig.maxShareWindow;
         if (ipPastThresholds && addressPastThresholds && inShareWindow && shareTrustIP.trustProbability >= shareTrustMaxTrustPercent && shareTrustAddress.trustProbability >= shareTrustMaxTrustPercent) {
             if (!shareTrustIP.trusted || !shareTrustAddress.trusted) {
-                logger_1.Logger.Log('info', logSystem, 'Miner is now share trusted %s@%s', [address, ip]);
+                Logger.Log('info', logSystem, 'Miner is now share trusted %s@%s', [address, ip]);
             }
             shareTrustIP.trusted = shareTrustAddress.trusted = true;
         }
@@ -173,7 +176,7 @@ function setTrust(ip, address, shareValidated, isIPC) {
             shareTrustIP.minUntrustedSeconds = shareTrustConfig.minUntrustedSeconds * shareTrustIP.currentPenaltyMultiplier;
             shareTrustAddress.minUntrustedSeconds = shareTrustConfig.minUntrustedSeconds * shareTrustAddress.currentPenaltyMultiplier;
             if (shareTrustIP.trusted && shareTrustAddress.trusted)
-                logger_1.Logger.Log('warn', logSystem, 'Share trust broken by %s@%s', [address, ip]);
+                Logger.Log('warn', logSystem, 'Share trust broken by %s@%s', [address, ip]);
             shareTrustIP.trusted = shareTrustAddress.trusted = false;
             if (isIPC) {
                 shareTrustIP.ipcRateBeginSeconds = shareTrustAddress.ipcRateBeginSeconds = dateNowSeconds;

@@ -2,25 +2,27 @@ import fs from 'fs';
 import async from 'async';
 import http from 'http';
 import apiInterfaces from './apiInterfaces';
-import { Global } from './defines';
-import { Logger } from './logger';
 
-const globalAny: Global = <Global>global;
+import { GlobalState } from './globalstate';
+let Logger = GlobalState.Logger;
+let config = GlobalState.config.config;
+let redisClient = GlobalState.redisClient;
 
 // var fs = require('fs')
 // var async = require('async')
 // var http = require('http')
 // var apiInterfaces = require('./apiInterfaces.js')(config.daemon, config.wallet, config.api)
 
-let api = new apiInterfaces(globalAny.config.config.daemon, globalAny.config.config.wallet, globalAny.config.config.api);
+let api = new apiInterfaces(config.daemon, config.wallet, config.api);
 var logSystem = 'charts';
 require('./exceptionWriter.js')(logSystem);
+
 
 Logger.Log('info', logSystem, 'Started');
 
 function startDataCollectors() {
-    async.each(Object.keys(globalAny.config.config.charts.pool), function (chartName) {
-        var settings = globalAny.config.config.charts.pool[chartName]
+    async.each(Object.keys(config.charts.pool), function (chartName) {
+        var settings = config.charts.pool[chartName]
         if (settings.enabled) {
             setInterval(function () {
                 collectPoolStatWithInterval(chartName, settings)
@@ -28,7 +30,7 @@ function startDataCollectors() {
         }
     })
 
-    var settings = globalAny.config.config.charts.user.hashrate
+    var settings = config.charts.user.hashrate;
     if (settings.enabled) {
         setInterval(function () {
             collectUsersHashrate('hashrate', settings)
@@ -37,7 +39,7 @@ function startDataCollectors() {
 }
 
 function getChartDataFromRedis(chartName: string, callback: any) {
-    globalAny.redisClient.get(getStatsRedisKey(chartName), function (error: any, data: any) {
+    redisClient.get(getStatsRedisKey(chartName), function (error: any, data: any) {
         callback(data ? JSON.parse(data) : [])
     })
 }
@@ -70,7 +72,7 @@ export function getUserChartsData(address: string, paymentsData: any, callback: 
         }
     }
     for (var chartName in chartsFuncs) {
-        if (!globalAny.config.config.charts.user[chartName].enabled) {
+        if (!config.charts.user[chartName].enabled) {
             delete chartsFuncs[chartName];
         }
     }
@@ -87,7 +89,7 @@ function getUserWorkerChartsData(address: string, paymentsData: any, callback: a
         }
     }
     for (var chartName in chartsFuncs) {
-        if (!globalAny.config.config.charts.user[chartName].enabled) {
+        if (!config.charts.user[chartName].enabled) {
             delete chartsFuncs[chartName];
         }
     }
@@ -95,7 +97,7 @@ function getUserWorkerChartsData(address: string, paymentsData: any, callback: a
 }
 
 function getStatsRedisKey(chartName: string): string {
-    return globalAny.config.config.coin + ':charts:' + chartName;
+    return config.coin + ':charts:' + chartName;
 }
 
 var chartStatFuncs: any = {
@@ -150,7 +152,7 @@ function storeCollectedValue(chartName: string, value: any, settings: any, callb
                 : statValueHandler.avgRound(lastSet, value)
             lastSet[2]++
         }
-        globalAny.redisClient.set(getStatsRedisKey(chartName), JSON.stringify(sets))
+        redisClient.set(getStatsRedisKey(chartName), JSON.stringify(sets))
         Logger.Log('info', logSystem, chartName + ' chart collected value ' + value + '. Total sets count ' + sets.length);
     })
 }
@@ -170,6 +172,7 @@ function getPoolStats(callback: any) {
 
 function getPoolHashrate(callback: any) {
     getPoolStats(function (error: any, stats: any) {
+        // crash if there are no stats?
         callback(error, stats.pool ? Math.round(stats.pool.hashrate) : null)
     })
 }
@@ -187,7 +190,7 @@ function getNetworkDifficulty(callback: any) {
 }
 
 function getUsersHashrates(callback: any) {
-    var method = '/miners_hashrate?password=' + globalAny.config.config.api.password;
+    var method = '/miners_hashrate?password=' + config.api.password;
     api.pool(method, function (error: any, data: any) {
         callback(data.minersHashrate);
     });
@@ -195,7 +198,7 @@ function getUsersHashrates(callback: any) {
 
 function collectUsersHashrate(chartName: any, settings: any) {
     let redisBaseKey = getStatsRedisKey(chartName) + ':'
-    globalAny.redisClient.keys(redisBaseKey + '*', function (keys: any) { // turtlecoin:charts:hashrate:*
+    redisClient.keys(redisBaseKey + '*', function (keys: any) { // turtlecoin:charts:hashrate:*
         let hashrates: any = {};
         for (let i in keys) {
             hashrates[keys[i].substr(keys[i].length)] = 0
@@ -214,7 +217,7 @@ function collectUsersHashrate(chartName: any, settings: any) {
 function getCoinPrice(callback: Function) {
     api.jsonHttpRequest('api.cryptonator.com', 443, '', function (error: any, response: any) {
         callback(response.error ? response.error : error, response.success ? +response.ticker.price : null)
-    }, '/api/ticker/' + globalAny.config.config.symbol.toLowerCase() + '-usd');
+    }, '/api/ticker/' + config.symbol.toLowerCase() + '-usd');
 }
 
 function getCoinProfit(callback: (e: any, p?: any) => any) {
@@ -228,7 +231,7 @@ function getCoinProfit(callback: (e: any, p?: any) => any) {
                 callback(error);
                 return;
             }
-            callback(null, stats.network.reward * price / stats.network.difficulty / globalAny.config.config.coinUnits);
+            callback(null, stats.network.reward * price / stats.network.difficulty / config.coinUnits);
         })
     })
 }
@@ -236,14 +239,14 @@ function getCoinProfit(callback: (e: any, p?: any) => any) {
 export function getPoolChartsData(callback: any) {
     let chartsNames: any = [];
     let redisKeys = [];
-    for (let chartName in globalAny.config.config.charts.pool) {
-        if (globalAny.config.config.charts.pool[chartName].enabled) {
+    for (let chartName in config.charts.pool) {
+        if (config.charts.pool[chartName].enabled) {
             chartsNames.push(chartName);
             redisKeys.push(getStatsRedisKey(chartName));
         }
     }
     if (redisKeys.length) {
-        globalAny.redisClient.mget(redisKeys, function (error: any, data: any) {
+        redisClient.mget(redisKeys, function (error: any, data: any) {
             let stats: any = {};
             if (data) {
                 for (let i in data) {
@@ -263,6 +266,6 @@ export function getPoolChartsData(callback: any) {
 module.exports = {
     startDataCollectors: startDataCollectors,
     getUserChartsData: getUserChartsData,
-    //getPoolChartsData: getPoolChartsData,
+    getPoolChartsData: getPoolChartsData,
     getUserWorkerChartsData: getUserWorkerChartsData
 }

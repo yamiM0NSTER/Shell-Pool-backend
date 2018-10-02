@@ -18,7 +18,9 @@ let severityMap: SeverityMap = {
 }
 
 class LoggerClass {
-    logDir: string = globalAny.config.config.logging.files.directory;
+    private static _instance: LoggerClass;
+    config : any;
+    logDir!: string; 
 
     // TODO: SeverityLevels enum
     severityLevels = ['info', 'warn', 'error'];
@@ -26,13 +28,23 @@ class LoggerClass {
     pendingWrites: { [name: string]: string } = {};
 
     constructor() {
+        this.config = undefined;
+    }
 
+    public static get Instance() {
+        // Do you need arguments? Make it a regular method instead.
+        return this._instance || (this._instance = new this());
+    }
+
+    SetConfig(config: any) {
+        this.config = config;
+        this.logDir = this.config.config.logging.files.directory;
     }
 
     // no longer use :any
     Log(severity: any, system: any, text: any, data?: any) {
-        let logConsole: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(globalAny.config.config.logging.console.level);
-        let logFiles: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(globalAny.config.config.logging.files.level);
+        let logConsole: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(this.config.config.logging.console.level);
+        let logFiles: boolean = this.severityLevels.lastIndexOf(severity) >= this.severityLevels.lastIndexOf(this.config.config.logging.files.level);
 
         if (!logConsole && !logFiles)
             return;
@@ -46,7 +58,7 @@ class LoggerClass {
         }
 
         if (logConsole) {
-            if (globalAny.config.config.logging.console.colors)
+            if (this.config.config.logging.console.colors)
                 console.log(`${severityMap[severity](time)} ${clc.white.bold('[' + system + ']')} ${formattedMessage}`);
             else
                 console.log(`${time} [${system}] ${formattedMessage}`);
@@ -80,10 +92,10 @@ class LoggerClass {
             }
         }
 
-        setInterval(this.IntervalFunc, globalAny.config.config.logging.files.flushInterval * 1000);
+        setInterval(this.IntervalFunc, this.config.config.logging.files.flushInterval * 1000);
     }
 }
 
-let Logger = new LoggerClass;
-Logger.Init();
-export { Logger };
+//let Logger = new LoggerClass(null);
+//Logger.Init();
+export { /*Logger,*/ LoggerClass };

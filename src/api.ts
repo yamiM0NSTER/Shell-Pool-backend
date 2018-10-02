@@ -5,15 +5,13 @@ import zlib from 'zlib';
 import async from 'async';
 import apiInterfaces from './apiInterfaces';
 import * as charts from './charts';
-import { Logger } from './logger';
 
-import { Global } from './defines';
-const globalAny: Global = <Global>global;
+import { GlobalState } from './globalstate';
+let Logger = GlobalState.Logger;
+let config = GlobalState.config.config;
+let redisClient = GlobalState.redisClient;
 
-let config = globalAny.config.config;
-let redisClient = globalAny.redisClient;
-
-let api = new apiInterfaces(globalAny.config.config.daemon, globalAny.config.config.wallet);
+let api = new apiInterfaces(config.daemon, config.wallet);
 // var fs = require('fs')
 // var http = require('http')
 // var url = require('url')
@@ -30,16 +28,16 @@ require('./exceptionWriter.js')(logSystem)
 
 var redisCommands = [
     ['zremrangebyscore', config.coin + ':hashrate', '-inf', ''],
-    ['zrange', config.coin + ':hashrate', 0, -1],
-    ['hgetall', config.coin + ':stats'],
-    ['zrange', config.coin + ':blocks:candidates', 0, -1, 'WITHSCORES'],
-    ['zrevrange', config.coin + ':blocks:matured', 0, config.api.blocks - 1, 'WITHSCORES'],
-    ['hgetall', config.coin + ':shares:roundCurrent'],
-    ['hgetall', config.coin + ':stats'],
-    ['zcard', config.coin + ':blocks:matured'],
-    ['zrevrange', config.coin + ':payments:all', 0, config.api.payments - 1, 'WITHSCORES'],
-    ['zcard', config.coin + ':payments:all'],
-    ['keys', config.coin + ':payments:*']
+    ['zrange',           config.coin + ':hashrate', 0, -1],
+    ['hgetall',          config.coin + ':stats'],
+    ['zrange',           config.coin + ':blocks:candidates', 0, -1, 'WITHSCORES'],
+    ['zrevrange',        config.coin + ':blocks:matured', 0, config.api.blocks - 1, 'WITHSCORES'],
+    ['hgetall',          config.coin + ':shares:roundCurrent'],
+    ['hgetall',          config.coin + ':stats'],
+    ['zcard',            config.coin + ':blocks:matured'],
+    ['zrevrange',        config.coin + ':payments:all', 0, config.api.payments - 1, 'WITHSCORES'],
+    ['zcard',            config.coin + ':payments:all'],
+    ['keys',             config.coin + ':payments:*']
 ]
 
 var currentStats = ''
@@ -288,7 +286,7 @@ function handleMinerStats(urlParts: any, response: any) {
     }
 }
 
-function handleWorkerStats(urlParts: any, response: any) {
+function handleWorkerStats(urlParts: any, response: http.ServerResponse) {
     response.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
@@ -296,14 +294,14 @@ function handleWorkerStats(urlParts: any, response: any) {
         'Connection': 'keep-alive'
     })
     response.write('\n')
-    var address = urlParts.query.address
+    var address = urlParts.query.address;
 
     charts.getUserChartsData(address, [], function (error: any, chartsData: any) {
         response.end(JSON.stringify({ charts: chartsData }))
     })
 }
 
-function handleSetMinerPayoutLevel(urlParts: any, response: any) {
+function handleSetMinerPayoutLevel(urlParts: any, response: http.ServerResponse) {
     response.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
@@ -312,8 +310,8 @@ function handleSetMinerPayoutLevel(urlParts: any, response: any) {
     })
     response.write('\n')
 
-    var address = urlParts.query.address
-    var level = urlParts.query.level
+    let address = urlParts.query.address;
+    let level = urlParts.query.level;
 
     // Check the minimal required parameters for this handle.
     if (address == undefined || level == undefined) {
@@ -327,19 +325,19 @@ function handleSetMinerPayoutLevel(urlParts: any, response: any) {
         return
     }
 
-    level = parseFloat(level)
+    level = parseFloat(level);
     if (isNaN(level)) {
-        response.end(JSON.stringify({ 'status': 'Your desired payment level doesn\'t look like a digit' }))
-        return
+        response.end(JSON.stringify({ 'status': 'Your desired payment level doesn\'t look like a digit' }));
+        return;
     }
 
     if (level < config.payments.minPayment / config.coinUnits) {
-        response.end(JSON.stringify({ 'status': 'Please choose a value above ' + config.payments.minPayment / config.coinUnits }))
-        return
+        response.end(JSON.stringify({ 'status': 'Please choose a value above ' + config.payments.minPayment / config.coinUnits }));
+        return;
     }
 
-    var payout_level = level * config.coinUnits
-    redisClient.hset(config.coin + ':workers:' + address, 'minPayoutLevel', payout_level, function (error: any, value: any) {
+    var payout_level = level * config.coinUnits;
+    redisClient.hset(`${config.coin}:workers:${address}`, 'minPayoutLevel', payout_level.toString(), function (error: any, value: any) {
         if (error) {
             response.end(JSON.stringify({ 'status': 'woops something failed' }));
             return;
@@ -350,7 +348,7 @@ function handleSetMinerPayoutLevel(urlParts: any, response: any) {
     })
 }
 
-function handleGetMinerPayoutLevel(urlParts: any, response: any) {
+function handleGetMinerPayoutLevel(urlParts: any, response: http.ServerResponse) {
     response.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
@@ -366,7 +364,7 @@ function handleGetMinerPayoutLevel(urlParts: any, response: any) {
         return;
     }
 
-    redisClient.hget(config.coin + ':workers:' + address, 'minPayoutLevel', function (error: any, value: any) {
+    redisClient.hget(`${config.coin}:workers:${address}`, 'minPayoutLevel', function (error: any, value: any) {
         if (error) {
             response.end(JSON.stringify({ 'status': 'woops something failed' }));
             return;
@@ -376,10 +374,11 @@ function handleGetMinerPayoutLevel(urlParts: any, response: any) {
     })
 }
 
-function handleGetPayments(urlParts: any, response: any) {
-    var paymentKey = ':payments:all'
+function handleGetPayments(urlParts: any, response: http.ServerResponse) {
+    let paymentKey: string = ':payments:all';
 
-    if (urlParts.query.address) { paymentKey = ':payments:' + urlParts.query.address }
+    if (urlParts.query.address) 
+        paymentKey = ':payments:' + urlParts.query.address;
 
     redisClient.zrevrangebyscore(
         config.coin + paymentKey,
@@ -394,7 +393,7 @@ function handleGetPayments(urlParts: any, response: any) {
 
             if (err) { reply = JSON.stringify({ error: 'query failed' }) } else { reply = JSON.stringify(result) }
 
-            response.writeHead('200', {
+            response.writeHead(200, {
                 'Access-Control-Allow-Origin': '*',
                 'Cache-Control': 'no-cache',
                 'Content-Type': 'application/json',
@@ -405,7 +404,7 @@ function handleGetPayments(urlParts: any, response: any) {
     )
 }
 
-function handleGetBlocks(urlParts: any, response: any) {
+function handleGetBlocks(urlParts: url.UrlWithParsedQuery, response: http.ServerResponse) {
     redisClient.zrevrangebyscore(
         config.coin + ':blocks:matured',
         '(' + urlParts.query.height,
@@ -417,9 +416,14 @@ function handleGetBlocks(urlParts: any, response: any) {
         function (err: any, result: any) {
             var reply
 
-            if (err) { reply = JSON.stringify({ error: 'query failed' }) } else { reply = JSON.stringify(result) }
+            if (err) {
+                reply = JSON.stringify({ error: 'query failed' });
+            }
+            else {
+                reply = JSON.stringify(result);
+            }
 
-            response.writeHead('200', {
+            response.writeHead(200, {
                 'Access-Control-Allow-Origin': '*',
                 'Cache-Control': 'no-cache',
                 'Content-Type': 'application/json',
@@ -429,11 +433,11 @@ function handleGetBlocks(urlParts: any, response: any) {
         })
 }
 
-function handleGetMinersHashrate(response: any) {
+function handleGetMinersHashrate(response: http.ServerResponse) {
     var reply = JSON.stringify({
         minersHashrate: minersHashrate
     })
-    response.writeHead('200', {
+    response.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
         'Content-Type': 'application/json',
@@ -452,7 +456,7 @@ function parseCookies(request: any) {
     return list
 }
 
-function authorize(request: any, response: any) {
+function authorize(request: any, response: http.ServerResponse) {
     if (request.connection.remoteAddress == '127.0.0.1')
         return true;
 
@@ -474,7 +478,7 @@ function authorize(request: any, response: any) {
     Logger.Log('warn', logSystem, 'Admin authorized');
     response.statusCode = 200
 
-    var cookieExpire = new Date(new Date().getTime() + 60 * 60 * 24 * 1000);
+    var cookieExpire = new Date(Date.now() + 60 * 60 * 24 * 1000);
     response.setHeader('Set-Cookie', 'sid=' + authSid + '; path=/; expires=' + cookieExpire.toUTCString());
     response.setHeader('Cache-Control', 'no-cache');
     response.setHeader('Content-Type', 'application/json');
@@ -482,7 +486,7 @@ function authorize(request: any, response: any) {
     return true;
 }
 
-function handleAdminStats(response: any) {
+function handleAdminStats(response: http.ServerResponse) {
     async.waterfall([
 
         // Get worker keys & unlocked blocks
@@ -556,7 +560,7 @@ function handleAdminStats(response: any) {
     )
 }
 
-function handleAdminUsers(response: any) {
+function handleAdminUsers(response: http.ServerResponse) {
     async.waterfall([
         // get workers Redis keys
         function (callback: any) {
@@ -594,8 +598,8 @@ function handleAdminUsers(response: any) {
     )
 }
 
-function handleAdminMonitoring(response: any) {
-    response.writeHead('200', {
+function handleAdminMonitoring(response: http.ServerResponse) {
+    response.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
         'Content-Type': 'application/json'
@@ -608,7 +612,7 @@ function handleAdminMonitoring(response: any) {
     })
 }
 
-function handleAdminLog(urlParts: any, response: any) {
+function handleAdminLog(urlParts: any, response: http.ServerResponse) {
     var file = urlParts.query.file
     var filePath = config.logging.files.directory + '/' + file;
     if (!file.match(/^\w+\.log$/))
@@ -655,9 +659,8 @@ function initMonitoring() {
     }
     for (var module in config.monitoring) {
         var settings = config.monitoring[module]
-        if (settings.checkInterval) {
-            startRpcMonitoring(modulesRpc[module], module, settings.rpcMethod, settings.checkInterval)
-        }
+        if (settings.checkInterval)
+            startRpcMonitoring(modulesRpc[module], module, settings.rpcMethod, settings.checkInterval);
     }
 }
 
@@ -693,7 +696,7 @@ function getLogFiles(callback: any) {
     })
 }
 
-var server = http.createServer(function (request: any, response) {
+var server = http.createServer(function (request: any, response: http.ServerResponse) {
     if (request.method.toUpperCase() === 'OPTIONS') {
         response.writeHead(204, 'No Content', {
             'access-control-allow-origin': '*',
@@ -706,12 +709,12 @@ var server = http.createServer(function (request: any, response) {
         return (response.end());
     }
 
-    var urlParts = url.parse(request.url, true)
+    let urlParts: url.UrlWithParsedQuery = url.parse(request.url, true);
 
     switch (urlParts.pathname) {
         case '/stats':
-            var deflate = request.headers['accept-encoding'] && request.headers['accept-encoding'].indexOf('deflate') != -1;
-            var reply = deflate ? currentStatsCompressed : currentStats;
+            let deflate = request.headers['accept-encoding'] && request.headers['accept-encoding'].indexOf('deflate') != -1;
+            let reply = deflate ? currentStatsCompressed : currentStats;
             response.writeHead(200, {
                 'Access-Control-Allow-Origin': '*',
                 'Cache-Control': 'no-cache',
@@ -768,8 +771,9 @@ var server = http.createServer(function (request: any, response) {
             break
 
         case '/miners_hashrate':
-            if (!authorize(request, response)) { return }
-            handleGetMinersHashrate(response)
+            if (!authorize(request, response)) 
+                return;
+            handleGetMinersHashrate(response);
             break
         case '/stats_worker':
             handleWorkerStats(urlParts, response)
@@ -789,9 +793,9 @@ var server = http.createServer(function (request: any, response) {
     }
 })
 
-collectStats()
-initMonitoring()
+collectStats();
+initMonitoring();
 
 server.listen(config.api.port, function () {
     Logger.Log('info', logSystem, 'API started & listening on port %d', [config.api.port]);
-})
+});

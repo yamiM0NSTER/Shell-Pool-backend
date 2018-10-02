@@ -5,26 +5,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const async_1 = __importDefault(require("async"));
 const apiInterfaces_1 = __importDefault(require("./apiInterfaces"));
-const logger_1 = require("./logger");
-const globalAny = global;
+const globalstate_1 = require("./globalstate");
+let Logger = globalstate_1.GlobalState.Logger;
+let config = globalstate_1.GlobalState.config.config;
+let redisClient = globalstate_1.GlobalState.redisClient;
 // var fs = require('fs')
 // var async = require('async')
 // var http = require('http')
 // var apiInterfaces = require('./apiInterfaces.js')(config.daemon, config.wallet, config.api)
-let api = new apiInterfaces_1.default(globalAny.config.config.daemon, globalAny.config.config.wallet, globalAny.config.config.api);
+let api = new apiInterfaces_1.default(config.daemon, config.wallet, config.api);
 var logSystem = 'charts';
 require('./exceptionWriter.js')(logSystem);
-logger_1.Logger.Log('info', logSystem, 'Started');
+Logger.Log('info', logSystem, 'Started');
 function startDataCollectors() {
-    async_1.default.each(Object.keys(globalAny.config.config.charts.pool), function (chartName) {
-        var settings = globalAny.config.config.charts.pool[chartName];
+    async_1.default.each(Object.keys(config.charts.pool), function (chartName) {
+        var settings = config.charts.pool[chartName];
         if (settings.enabled) {
             setInterval(function () {
                 collectPoolStatWithInterval(chartName, settings);
             }, settings.updateInterval * 1000);
         }
     });
-    var settings = globalAny.config.config.charts.user.hashrate;
+    var settings = config.charts.user.hashrate;
     if (settings.enabled) {
         setInterval(function () {
             collectUsersHashrate('hashrate', settings);
@@ -32,7 +34,7 @@ function startDataCollectors() {
     }
 }
 function getChartDataFromRedis(chartName, callback) {
-    globalAny.redisClient.get(getStatsRedisKey(chartName), function (error, data) {
+    redisClient.get(getStatsRedisKey(chartName), function (error, data) {
         callback(data ? JSON.parse(data) : []);
     });
 }
@@ -61,7 +63,7 @@ function getUserChartsData(address, paymentsData, callback) {
         }
     };
     for (var chartName in chartsFuncs) {
-        if (!globalAny.config.config.charts.user[chartName].enabled) {
+        if (!config.charts.user[chartName].enabled) {
             delete chartsFuncs[chartName];
         }
     }
@@ -79,14 +81,14 @@ function getUserWorkerChartsData(address, paymentsData, callback) {
         }
     };
     for (var chartName in chartsFuncs) {
-        if (!globalAny.config.config.charts.user[chartName].enabled) {
+        if (!config.charts.user[chartName].enabled) {
             delete chartsFuncs[chartName];
         }
     }
     async_1.default.parallel(chartsFuncs, callback);
 }
 function getStatsRedisKey(chartName) {
-    return globalAny.config.config.coin + ':charts:' + chartName;
+    return config.coin + ':charts:' + chartName;
 }
 var chartStatFuncs = {
     hashrate: getPoolHashrate,
@@ -137,8 +139,8 @@ function storeCollectedValue(chartName, value, settings, callback) {
                 : statValueHandler.avgRound(lastSet, value);
             lastSet[2]++;
         }
-        globalAny.redisClient.set(getStatsRedisKey(chartName), JSON.stringify(sets));
-        logger_1.Logger.Log('info', logSystem, chartName + ' chart collected value ' + value + '. Total sets count ' + sets.length);
+        redisClient.set(getStatsRedisKey(chartName), JSON.stringify(sets));
+        Logger.Log('info', logSystem, chartName + ' chart collected value ' + value + '. Total sets count ' + sets.length);
     });
 }
 function collectPoolStatWithInterval(chartName, settings) {
@@ -168,14 +170,14 @@ function getNetworkDifficulty(callback) {
     });
 }
 function getUsersHashrates(callback) {
-    var method = '/miners_hashrate?password=' + globalAny.config.config.api.password;
+    var method = '/miners_hashrate?password=' + config.api.password;
     api.pool(method, function (error, data) {
         callback(data.minersHashrate);
     });
 }
 function collectUsersHashrate(chartName, settings) {
     let redisBaseKey = getStatsRedisKey(chartName) + ':';
-    globalAny.redisClient.keys(redisBaseKey + '*', function (keys) {
+    redisClient.keys(redisBaseKey + '*', function (keys) {
         let hashrates = {};
         for (let i in keys) {
             hashrates[keys[i].substr(keys[i].length)] = 0;
@@ -193,7 +195,7 @@ function collectUsersHashrate(chartName, settings) {
 function getCoinPrice(callback) {
     api.jsonHttpRequest('api.cryptonator.com', 443, '', function (error, response) {
         callback(response.error ? response.error : error, response.success ? +response.ticker.price : null);
-    }, '/api/ticker/' + globalAny.config.config.symbol.toLowerCase() + '-usd');
+    }, '/api/ticker/' + config.symbol.toLowerCase() + '-usd');
 }
 function getCoinProfit(callback) {
     getCoinPrice(function (error, price) {
@@ -206,21 +208,21 @@ function getCoinProfit(callback) {
                 callback(error);
                 return;
             }
-            callback(null, stats.network.reward * price / stats.network.difficulty / globalAny.config.config.coinUnits);
+            callback(null, stats.network.reward * price / stats.network.difficulty / config.coinUnits);
         });
     });
 }
 function getPoolChartsData(callback) {
     let chartsNames = [];
     let redisKeys = [];
-    for (let chartName in globalAny.config.config.charts.pool) {
-        if (globalAny.config.config.charts.pool[chartName].enabled) {
+    for (let chartName in config.charts.pool) {
+        if (config.charts.pool[chartName].enabled) {
             chartsNames.push(chartName);
             redisKeys.push(getStatsRedisKey(chartName));
         }
     }
     if (redisKeys.length) {
-        globalAny.redisClient.mget(redisKeys, function (error, data) {
+        redisClient.mget(redisKeys, function (error, data) {
             let stats = {};
             if (data) {
                 for (let i in data) {
@@ -240,7 +242,7 @@ exports.getPoolChartsData = getPoolChartsData;
 module.exports = {
     startDataCollectors: startDataCollectors,
     getUserChartsData: getUserChartsData,
-    //getPoolChartsData: getPoolChartsData,
+    getPoolChartsData: getPoolChartsData,
     getUserWorkerChartsData: getUserWorkerChartsData
 };
 //# sourceMappingURL=charts.js.map

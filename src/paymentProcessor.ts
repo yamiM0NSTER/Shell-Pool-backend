@@ -2,17 +2,21 @@ import fs from 'fs';
 import async from 'async';
 import cfg from './configReader';
 import apiInterfaces from './apiInterfaces';
-import { Logger } from './logger';
+//import { Logger } from './logger';
+import { GlobalState } from './globalstate';
+let Logger = GlobalState.Logger;
+let config = GlobalState.config.config;
+let redisClient = GlobalState.redisClient;
 //var fs = require('fs')
 //var async = require('async')
 //var apiInterfaces = require('./apiInterfaces.js')(config.daemon, config.wallet, config.api)
 
 // TODO: better usage than global
-import { Global } from './defines';
+//import { Global } from './defines';
 
-const globalAny: Global = <Global>global;
+//const globalAny: Global = <Global>global;
 
-let api = new apiInterfaces(globalAny.config.config.daemon, globalAny.config.config.wallet, globalAny.config.config.api);
+let api = new apiInterfaces(config.daemon, config.wallet, config.api);
 
 var logSystem = 'payments'
 require('./exceptionWriter.js')(logSystem)
@@ -23,7 +27,7 @@ function runInterval() {
     async.waterfall([
         // Get worker keys
         function (callback: any) {
-            globalAny.redisClient.keys(globalAny.config.config.coin + ':workers:*', function (error: any, result: any) {
+            redisClient.keys(config.coin + ':workers:*', function (error: any, result: any) {
                 if (error) {
                     Logger.Log('error', logSystem, 'Error trying to get worker balances from redis %j', [error])
                     callback(true)
@@ -38,7 +42,7 @@ function runInterval() {
             var redisCommands = keys.map(function (k: any) {
                 return ['hmget', k, 'balance', 'minPayoutLevel']
             })
-            globalAny.redisClient.multi(redisCommands).exec(function (error: any, replies: any) {
+            redisClient.multi(redisCommands).exec(function (error: any, replies: any) {
                 if (error) {
                     Logger.Log('error', logSystem, 'Error with getting balances from redis %j', [error]);
                     callback(true);
@@ -51,8 +55,8 @@ function runInterval() {
                     let workerId = parts[parts.length - 1];
                     let data = replies[i];
                     balances[workerId] = parseInt(data[0]) || 0;
-                    minPayoutLevel[workerId] = parseFloat(data[1]) || globalAny.config.config.payments.minPayment;
-                    Logger.Log('info', logSystem, 'Using payout level %d for worker %s (default: %d)', [minPayoutLevel[workerId], workerId, globalAny.config.config.payments.minPayment]);
+                    minPayoutLevel[workerId] = parseFloat(data[1]) || config.payments.minPayment;
+                    Logger.Log('info', logSystem, 'Using payout level %d for worker %s (default: %d)', [minPayoutLevel[workerId], workerId, config.payments.minPayment]);
                 }
                 callback(null, balances, minPayoutLevel);
             })
@@ -65,7 +69,7 @@ function runInterval() {
             for (let worker in balances) {
                 let balance = balances[worker]
                 if (balance >= minPayoutLevel[worker]) {
-                    let remainder = balance % globalAny.config.config.payments.denomination;
+                    let remainder = balance % config.payments.denomination;
                     let payout = balance - remainder;
                     if (payout < 0)
                         continue;
@@ -86,8 +90,8 @@ function runInterval() {
 
             for (let worker in payments) {
                 let amount = payments[worker];
-                if (globalAny.config.config.payments.maxTransactionAmount && amount + commandAmount > globalAny.config.config.payments.maxTransactionAmount)
-                    amount = globalAny.config.config.payments.maxTransactionAmount - commandAmount;
+                if (config.payments.maxTransactionAmount && amount + commandAmount > config.payments.maxTransactionAmount)
+                    amount = config.payments.maxTransactionAmount - commandAmount;
                 
 
                 if (!transferCommands[commandIndex]) {
@@ -96,20 +100,20 @@ function runInterval() {
                         amount: 0,
                         rpc: {
                             transfers: [],
-                            fee: globalAny.config.config.payments.transferFee,
+                            fee: config.payments.transferFee,
                         }
                     }
                 }
 
                 transferCommands[commandIndex].rpc.transfers.push({ amount: amount, address: worker });
-                transferCommands[commandIndex].redis.push(['hincrby', globalAny.config.config.coin + ':workers:' + worker, 'balance', -amount]);
-                transferCommands[commandIndex].redis.push(['hincrby', globalAny.config.config.coin + ':workers:' + worker, 'paid', amount]);
+                transferCommands[commandIndex].redis.push(['hincrby', config.coin + ':workers:' + worker, 'balance', -amount]);
+                transferCommands[commandIndex].redis.push(['hincrby', config.coin + ':workers:' + worker, 'paid', amount]);
                 transferCommands[commandIndex].amount += amount;
 
                 addresses++;
                 commandAmount += amount;
-                if (addresses >= globalAny.config.config.payments.maxAddresses
-                    || (globalAny.config.config.payments.maxTransactionAmount && commandAmount >= globalAny.config.config.payments.maxTransactionAmount)) {
+                if (addresses >= config.payments.maxAddresses
+                    || (config.payments.maxTransactionAmount && commandAmount >= config.payments.maxTransactionAmount)) {
                     commandIndex++;
                     addresses = 0;
                     commandAmount = 0;
@@ -130,7 +134,7 @@ function runInterval() {
                     let now = (timeOffset++) + Date.now() / 1000 | 0;
                     let txHash = result.transactionHash;
 
-                    transferCmd.redis.push(['zadd', globalAny.config.config.coin + ':payments:all', now, [
+                    transferCmd.redis.push(['zadd', config.coin + ':payments:all', now, [
                         txHash,
                         transferCmd.amount,
                         transferCmd.rpc.fee,
@@ -139,7 +143,7 @@ function runInterval() {
 
                     for (var i = 0; i < transferCmd.rpc.transfers.length; i++) {
                         var destination = transferCmd.rpc.transfers[i]
-                        transferCmd.redis.push(['zadd', globalAny.config.config.coin + ':payments:' + destination.address, now, [
+                        transferCmd.redis.push(['zadd', config.coin + ':payments:' + destination.address, now, [
                             txHash,
                             destination.amount,
                             transferCmd.rpc.fee,
@@ -147,7 +151,7 @@ function runInterval() {
                     }
 
                     Logger.Log('info', logSystem, 'Payments sent via wallet daemon %j', [result])
-                    globalAny.redisClient.multi(transferCmd.redis).exec(function (error: any, replies: any) {
+                    redisClient.multi(transferCmd.redis).exec(function (error: any, replies: any) {
                         if (error) {
                             Logger.Log('error', logSystem, 'Super critical error! Payments sent yet failing to update balance in redis, double payouts likely to happen %j', [error]);
                             Logger.Log('error', logSystem, 'Double payments likely to be sent to %j', transferCmd.rpc.transfers);
@@ -165,7 +169,7 @@ function runInterval() {
         }
 
     ], function (error, result) {
-        setTimeout(runInterval, globalAny.config.config.payments.interval * 1000)
+        setTimeout(runInterval, config.payments.interval * 1000)
     })
 }
 

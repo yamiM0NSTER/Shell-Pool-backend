@@ -1,7 +1,7 @@
 import http from 'http';
 import https from 'https';
 
-function jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: any) {
+function jsonHttpRequest(host: any, port: number, data: any, callback: any, path?: string) {
     path = path || '/json_rpc';
 
     let options = {
@@ -29,7 +29,8 @@ function jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: 
                 let replyJson
                 try {
                     replyJson = JSON.parse(replyData);
-                } catch (e) {
+                }
+                catch (e) {
                     callback(e);
                     return;
                 }
@@ -77,10 +78,10 @@ function jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: 
     //   })
 
     req.on('error', function (e) {
-        callback(e)
-    })
+        callback(e);
+    });
 
-    req.end(data)
+    req.end(data);
 }
 
 function rpc(host: any, port: any, method: any, params: any, callback: any, password?: any) {
@@ -174,7 +175,7 @@ class apiInterfaces {
         jsonHttpRequest(this.poolApiConfig.host, this.poolApiConfig.port, '', callback, method);
     }
 
-    jsonHttpRequest(host: any, port: any, data: any, callback: any, path?: any) {
+    jsonHttpRequest(host: any, port: number, data: any, callback: any, path?: string) {
         jsonHttpRequest(host, port, data, callback, path);
     }
 }

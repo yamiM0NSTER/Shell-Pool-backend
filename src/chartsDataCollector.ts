@@ -1,11 +1,14 @@
 var fs = require('fs')
 var async = require('async')
 var http = require('http')
-var charts = require('./charts.js')
+var charts = require('./charts')
+//import { Logger } from './logger';
+import { GlobalState } from './globalstate';
+let Logger = GlobalState.Logger;
 
-var logSystem = 'chartsDataCollector'
-require('./exceptionWriter.js')(logSystem)
+var logSystem = 'chartsDataCollector';
+require('./exceptionWriter.js')(logSystem);
 
-log('info', logSystem, 'Started')
+Logger.Log('info', logSystem, 'Started');
 
-charts.startDataCollectors()
+charts.startDataCollectors();

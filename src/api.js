@@ -17,11 +17,11 @@ const zlib_1 = __importDefault(require("zlib"));
 const async_1 = __importDefault(require("async"));
 const apiInterfaces_1 = __importDefault(require("./apiInterfaces"));
 const charts = __importStar(require("./charts"));
-const logger_1 = require("./logger");
-const globalAny = global;
-let config = globalAny.config.config;
-let redisClient = globalAny.redisClient;
-let api = new apiInterfaces_1.default(globalAny.config.config.daemon, globalAny.config.config.wallet);
+const globalstate_1 = require("./globalstate");
+let Logger = globalstate_1.GlobalState.Logger;
+let config = globalstate_1.GlobalState.config.config;
+let redisClient = globalstate_1.GlobalState.redisClient;
+let api = new apiInterfaces_1.default(config.daemon, config.wallet);
 // var fs = require('fs')
 // var http = require('http')
 // var url = require('url')
@@ -63,7 +63,7 @@ function collectStats() {
                 redisFinished = Date.now();
                 var dateNowSeconds = Date.now() / 1000 | 0;
                 if (error) {
-                    logger_1.Logger.Log('error', logSystem, 'Error getting redis data %j', [error]);
+                    Logger.Log('error', logSystem, 'Error getting redis data %j', [error]);
                     callback(true);
                     return;
                 }
@@ -120,7 +120,7 @@ function collectStats() {
             api.rpcDaemon('getlastblockheader', {}, function (error, reply) {
                 daemonFinished = Date.now();
                 if (error) {
-                    logger_1.Logger.Log('error', logSystem, 'Error getting daemon data %j', [error]);
+                    Logger.Log('error', logSystem, 'Error getting daemon data %j', [error]);
                     callback(true);
                     return;
                 }
@@ -155,9 +155,9 @@ function collectStats() {
         },
         charts: charts.getPoolChartsData
     }, function (error, results) {
-        logger_1.Logger.Log('info', logSystem, 'Stat collection finished: %d ms redis, %d ms daemon', [redisFinished - startTime, daemonFinished - startTime]);
+        Logger.Log('info', logSystem, 'Stat collection finished: %d ms redis, %d ms daemon', [redisFinished - startTime, daemonFinished - startTime]);
         if (error) {
-            logger_1.Logger.Log('error', logSystem, 'Error collecting all stats');
+            Logger.Log('error', logSystem, 'Error collecting all stats');
         }
         else {
             currentStats = JSON.stringify(results);
@@ -184,7 +184,7 @@ function getReadableHashRateString(hashrate) {
     return hashrate.toFixed(2) + byteUnits[i];
 }
 function broadcastLiveStats() {
-    logger_1.Logger.Log('info', logSystem, 'Broadcasting to %d visitors and %d address lookups', [Object.keys(liveConnections).length, Object.keys(addressConnections).length]);
+    Logger.Log('info', logSystem, 'Broadcasting to %d visitors and %d address lookups', [Object.keys(liveConnections).length, Object.keys(addressConnections).length]);
     for (var uid in liveConnections) {
         var res = liveConnections[uid];
         res.end(currentStatsCompressed);
@@ -285,8 +285,8 @@ function handleSetMinerPayoutLevel(urlParts, response) {
         'Connection': 'keep-alive'
     });
     response.write('\n');
-    var address = urlParts.query.address;
-    var level = urlParts.query.level;
+    let address = urlParts.query.address;
+    let level = urlParts.query.level;
     // Check the minimal required parameters for this handle.
     if (address == undefined || level == undefined) {
         response.end(JSON.stringify({ 'status': 'parameters are incomplete' }));
@@ -307,12 +307,12 @@ function handleSetMinerPayoutLevel(urlParts, response) {
         return;
     }
     var payout_level = level * config.coinUnits;
-    redisClient.hset(config.coin + ':workers:' + address, 'minPayoutLevel', payout_level, function (error, value) {
+    redisClient.hset(`${config.coin}:workers:${address}`, 'minPayoutLevel', payout_level.toString(), function (error, value) {
         if (error) {
             response.end(JSON.stringify({ 'status': 'woops something failed' }));
             return;
         }
-        logger_1.Logger.Log('info', logSystem, 'Updated payout level for address ' + address + ' level: ' + payout_level);
+        Logger.Log('info', logSystem, 'Updated payout level for address ' + address + ' level: ' + payout_level);
         response.end(JSON.stringify({ 'status': 'done' }));
     });
 }
@@ -330,7 +330,7 @@ function handleGetMinerPayoutLevel(urlParts, response) {
         response.end(JSON.stringify({ 'status': 'parameters are incomplete' }));
         return;
     }
-    redisClient.hget(config.coin + ':workers:' + address, 'minPayoutLevel', function (error, value) {
+    redisClient.hget(`${config.coin}:workers:${address}`, 'minPayoutLevel', function (error, value) {
         if (error) {
             response.end(JSON.stringify({ 'status': 'woops something failed' }));
             return;
@@ -340,10 +340,9 @@ function handleGetMinerPayoutLevel(urlParts, response) {
     });
 }
 function handleGetPayments(urlParts, response) {
-    var paymentKey = ':payments:all';
-    if (urlParts.query.address) {
+    let paymentKey = ':payments:all';
+    if (urlParts.query.address)
         paymentKey = ':payments:' + urlParts.query.address;
-    }
     redisClient.zrevrangebyscore(config.coin + paymentKey, '(' + urlParts.query.time, '-inf', 'WITHSCORES', 'LIMIT', 0, config.api.payments, function (err, result) {
         var reply;
         if (err) {
@@ -352,7 +351,7 @@ function handleGetPayments(urlParts, response) {
         else {
             reply = JSON.stringify(result);
         }
-        response.writeHead('200', {
+        response.writeHead(200, {
             'Access-Control-Allow-Origin': '*',
             'Cache-Control': 'no-cache',
             'Content-Type': 'application/json',
@@ -370,7 +369,7 @@ function handleGetBlocks(urlParts, response) {
         else {
             reply = JSON.stringify(result);
         }
-        response.writeHead('200', {
+        response.writeHead(200, {
             'Access-Control-Allow-Origin': '*',
             'Cache-Control': 'no-cache',
             'Content-Type': 'application/json',
@@ -383,7 +382,7 @@ function handleGetMinersHashrate(response) {
     var reply = JSON.stringify({
         minersHashrate: minersHashrate
     });
-    response.writeHead('200', {
+    response.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
         'Content-Type': 'application/json',
@@ -413,9 +412,9 @@ function authorize(request, response) {
         response.end('invalid password');
         return;
     }
-    logger_1.Logger.Log('warn', logSystem, 'Admin authorized');
+    Logger.Log('warn', logSystem, 'Admin authorized');
     response.statusCode = 200;
-    var cookieExpire = new Date(new Date().getTime() + 60 * 60 * 24 * 1000);
+    var cookieExpire = new Date(Date.now() + 60 * 60 * 24 * 1000);
     response.setHeader('Set-Cookie', 'sid=' + authSid + '; path=/; expires=' + cookieExpire.toUTCString());
     response.setHeader('Cache-Control', 'no-cache');
     response.setHeader('Content-Type', 'application/json');
@@ -430,7 +429,7 @@ function handleAdminStats(response) {
                 ['zrange', config.coin + ':blocks:matured', 0, -1]
             ]).exec(function (error, replies) {
                 if (error) {
-                    logger_1.Logger.Log('error', logSystem, 'Error trying to get admin data from redis %j', [error]);
+                    Logger.Log('error', logSystem, 'Error trying to get admin data from redis %j', [error]);
                     callback(true);
                     return;
                 }
@@ -444,7 +443,7 @@ function handleAdminStats(response) {
             });
             redisClient.multi(redisCommands).exec(function (error, replies) {
                 if (error) {
-                    logger_1.Logger.Log('error', logSystem, 'Error with getting balances from redis %j', [error]);
+                    Logger.Log('error', logSystem, 'Error with getting balances from redis %j', [error]);
                     callback(true);
                     return;
                 }
@@ -526,7 +525,7 @@ function handleAdminUsers(response) {
     });
 }
 function handleAdminMonitoring(response) {
-    response.writeHead('200', {
+    response.writeHead(200, {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
         'Content-Type': 'application/json'
@@ -581,9 +580,8 @@ function initMonitoring() {
     };
     for (var module in config.monitoring) {
         var settings = config.monitoring[module];
-        if (settings.checkInterval) {
+        if (settings.checkInterval)
             startRpcMonitoring(modulesRpc[module], module, settings.rpcMethod, settings.checkInterval);
-        }
     }
 }
 function getMonitoringData(callback) {
@@ -627,11 +625,11 @@ var server = http_1.default.createServer(function (request, response) {
         });
         return (response.end());
     }
-    var urlParts = url_1.default.parse(request.url, true);
+    let urlParts = url_1.default.parse(request.url, true);
     switch (urlParts.pathname) {
         case '/stats':
-            var deflate = request.headers['accept-encoding'] && request.headers['accept-encoding'].indexOf('deflate') != -1;
-            var reply = deflate ? currentStatsCompressed : currentStats;
+            let deflate = request.headers['accept-encoding'] && request.headers['accept-encoding'].indexOf('deflate') != -1;
+            let reply = deflate ? currentStatsCompressed : currentStats;
             response.writeHead(200, {
                 'Access-Control-Allow-Origin': '*',
                 'Cache-Control': 'no-cache',
@@ -689,9 +687,8 @@ var server = http_1.default.createServer(function (request, response) {
             handleAdminUsers(response);
             break;
         case '/miners_hashrate':
-            if (!authorize(request, response)) {
+            if (!authorize(request, response))
                 return;
-            }
             handleGetMinersHashrate(response);
             break;
         case '/stats_worker':
@@ -714,6 +711,6 @@ var server = http_1.default.createServer(function (request, response) {
 collectStats();
 initMonitoring();
 server.listen(config.api.port, function () {
-    logger_1.Logger.Log('info', logSystem, 'API started & listening on port %d', [config.api.port]);
+    Logger.Log('info', logSystem, 'API started & listening on port %d', [config.api.port]);
 });
 //# sourceMappingURL=api.js.map

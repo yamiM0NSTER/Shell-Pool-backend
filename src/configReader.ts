@@ -1,10 +1,17 @@
 import fs from 'fs';
 
 class Config {
+    private static _instance: Config;
     config: any;
 
     constructor() {
         this.config = undefined;
+        this.ReadConfig();
+    }
+
+    public static get Instance() {
+        // Do you need arguments? Make it a regular method instead.
+        return this._instance || (this._instance = new this());
     }
 
     ReadConfig() {

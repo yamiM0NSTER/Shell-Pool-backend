@@ -38,6 +38,11 @@ class Config {
         this.donations = [];
         this.version = 'v1.1.4';
         this.config = undefined;
+        this.ReadConfig();
+    }
+    static get Instance() {
+        // Do you need arguments? Make it a regular method instead.
+        return this._instance || (this._instance = new this());
     }
     ReadConfig() {
         try {
