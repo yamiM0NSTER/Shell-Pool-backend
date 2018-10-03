@@ -1,12 +1,6 @@
-//import cfg from './configReader';
-//import { Logger } from './logger';
 import { GlobalState } from './globalstate';
 let Logger = GlobalState.Logger;
 let config = GlobalState.config.config;
-import { Global } from './defines';
-
-const globalAny: Global = <Global>global;
-
 
 type MinerShareInfo = {
     lastShareSeconds: number,

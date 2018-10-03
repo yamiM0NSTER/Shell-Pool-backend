@@ -156,6 +156,7 @@ function getPoolStats(callback) {
 }
 function getPoolHashrate(callback) {
     getPoolStats(function (error, stats) {
+        // crash if there are no stats?
         callback(error, stats.pool ? Math.round(stats.pool.hashrate) : null);
     });
 }

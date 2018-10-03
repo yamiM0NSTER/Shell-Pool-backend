@@ -1,30 +1,17 @@
 //import fs from 'fs';
 import net from 'net';
 //var fs = require('fs')
-
-//var net = require('net')
-
 import * as crypto from 'crypto';
-//var crypto = require('crypto')
-//var crypto = require('browserify-aes');
 
 var async = require('async')
 var bignum = require('bignum')
 var multiHashing = require('turtlecoin-multi-hashing')
 var cnUtil = require('turtlecoin-cryptonote-util')
 
-// import { Global } from './defines';
-// const globalAny: Global = <Global>global;
-// let config = globalAny.config.config;
-// let redisClient = globalAny.redisClient;
-
 import { GlobalState } from './globalstate';
 
 let config = GlobalState.config.config;
-let donations: any = GlobalState.config.donations;
 let redisClient = GlobalState.redisClient;
-
-//import { Logger } from './logger';
 
 // Must exactly be 8 hex chars
 var noncePattern = new RegExp('^[0-9A-Fa-f]{8}$')
@@ -61,7 +48,7 @@ var currentBlockTemplate: any;
 var scoreTime: any;
 var lastChecked = 0;
 
-var connectedMiners: any = {};
+var connectedMiners: {[key:string]: Miner} = {};
 
 var bannedIPs: any = {};
 var perIPStats: any = {};
@@ -71,9 +58,9 @@ var banningEnabled = config.poolServer.banning && config.poolServer.banning.enab
 var addressBase58Prefix = cnUtil.address_decode(new Buffer(config.poolServer.poolAddress));
 
 setInterval(function () {
-    var now = Date.now() / 1000 | 0
+    let now: number = Date.now() / 1000 | 0;
     for (var minerId in connectedMiners) {
-        var miner = connectedMiners[minerId]
+        let miner: Miner = connectedMiners[minerId];
         if (!miner.noRetarget) {
             miner.retarget(now);
         }
@@ -82,24 +69,24 @@ setInterval(function () {
 
 /* Every 30 seconds clear out timed-out miners and old bans */
 setInterval(function () {
-    var now = Date.now()
-    var dateNowSeconds = now / 1000 | 0
-    var timeout = config.poolServer.minerTimeout * 1000
+    var now = Date.now();
+    var dateNowSeconds = now / 1000 | 0;
+    var timeout = config.poolServer.minerTimeout * 1000;
     for (var minerId in connectedMiners) {
-        var miner = connectedMiners[minerId]
+        let miner: Miner = connectedMiners[minerId];
         if (now - miner.lastBeat > timeout) {
             log('warn', logSystem, 'Miner timed out and disconnected %s@%s', [miner.login, miner.ip])
-            delete connectedMiners[minerId]
+            delete connectedMiners[minerId];
         }
     }
 
     if (banningEnabled) {
         for (let ip in bannedIPs) {
-            var banTime = bannedIPs[ip]
+            var banTime = bannedIPs[ip];
             if (now - banTime > config.poolServer.banning.time * 1000) {
-                delete bannedIPs[ip]
-                delete perIPStats[ip]
-                log('info', logSystem, 'Ban dropped for %s', [ip])
+                delete bannedIPs[ip];
+                delete perIPStats[ip];
+                log('info', logSystem, 'Ban dropped for %s', [ip]);
             }
         }
     }
@@ -108,8 +95,8 @@ setInterval(function () {
 process.on('message', function (message) {
     switch (message.type) {
         case 'banIP':
-            bannedIPs[message.ip] = Date.now()
-            break
+            bannedIPs[message.ip] = Date.now();
+            break;
     }
 })
 
@@ -120,11 +107,12 @@ function IsBannedIp(ip: any) {
     var bannedTimeAgo = Date.now() - bannedTime
     var timeLeft = config.poolServer.banning.time * 1000 - bannedTimeAgo
     if (timeLeft > 0) {
-        return true
-    } else {
-        delete bannedIPs[ip]
-        log('info', logSystem, 'Ban dropped for %s', [ip])
-        return false
+        return true;
+    }
+    else {
+        delete bannedIPs[ip];
+        log('info', logSystem, 'Ban dropped for %s', [ip]);
+        return false;
     }
 }
 
@@ -137,13 +125,13 @@ class BlockTemplate {
     extraNonce: any;
 
     constructor(template: any) {
-        this.blob = template.blocktemplate_blob
-        this.difficulty = template.difficulty
-        this.height = template.height
-        this.reserveOffset = template.reserved_offset
-        this.buffer = new Buffer(this.blob, 'hex')
-        instanceId.copy(this.buffer, this.reserveOffset + 4, 0, 3)
-        this.extraNonce = 0
+        this.blob = template.blocktemplate_blob;
+        this.difficulty = template.difficulty;
+        this.height = template.height;
+        this.reserveOffset = template.reserved_offset;
+        this.buffer = new Buffer(this.blob, 'hex');
+        instanceId.copy(this.buffer, this.reserveOffset + 4, 0, 3);
+        this.extraNonce = 0;
     }
     nextBlob () {
          this.buffer.writeUInt32BE(++this.extraNonce, this.reserveOffset);
@@ -200,13 +188,13 @@ function processBlockTemplate(template: any) {
     currentBlockTemplate = new BlockTemplate(template);
 
     for (var minerId in connectedMiners) {
-        var miner = connectedMiners[minerId]
-        miner.pushMessage('job', miner.getJob())
+        let miner: Miner = connectedMiners[minerId];
+        miner.pushMessage('job', miner.getJob());
     }
 }
 
 (function init() {
-    jobRefresh(true, function (sucessful: any) {
+    jobRefresh(true, function (sucessful: boolean) {
         if (!sucessful) {
             log('error', logSystem, 'Could not start pool')
             process.exit();
@@ -265,7 +253,7 @@ class Miner {
         this.lastShareTime = Date.now() / 1000 | 0;
     }
 
-    retarget(now: any) {
+    retarget(now: number) {
         var options = config.poolServer.varDiff
 
         var sinceLast = now - this.lastShareTime
@@ -367,19 +355,20 @@ class Miner {
     }
 
     checkBan(validShare: any) {
-        if (!banningEnabled) return
+        if (!banningEnabled)
+            return;
 
         // Init global per-IP shares stats
         if (!perIPStats[this.ip]) {
             perIPStats[this.ip] = { validShares: 0, invalidShares: 0 }
         }
 
-        var stats = perIPStats[this.ip]
+        var stats = perIPStats[this.ip];
         validShare ? stats.validShares++ : stats.invalidShares++
         if (stats.validShares + stats.invalidShares >= config.poolServer.banning.checkThreshold) {
             if (stats.invalidShares / (stats.invalidShares + stats.validShares) >= config.poolServer.banning.invalidPercent / 100) {
                 log('warn', logSystem, 'Banned %s@%s', [this.login, this.ip])
-                bannedIPs[this.ip] = Date.now()
+                bannedIPs[this.ip] = Date.now();
                 delete connectedMiners[this.id];
                 // idk if it even works TODO: make it call properly
                 (<any>process).send({ type: 'banIP', ip: this.ip })
@@ -516,7 +505,7 @@ function processShare(miner: any, job: any, blockTemplate: any, nonce: any, resu
 }
 
 function handleMinerMethod(method: string, params: any, ip: any, portData: any, sendReply: any, pushMessage: any) {
-    var miner = connectedMiners[params.id];
+    let miner: Miner = connectedMiners[params.id];
 
     // Check for ban here, so preconnected attackers can't continue to screw you
     if (IsBannedIp(ip)) {
@@ -552,10 +541,10 @@ function handleMinerMethod(method: string, params: any, ip: any, portData: any, 
                 log('info', logSystem, 'Miner %s uses worker name: %s', [login, workerName]);
             }
             if (config.poolServer.fixedDiff.enabled) {
-                var fixedDiffCharPos: number = login.indexOf(config.poolServer.fixedDiff.addressSeparator);
+                let fixedDiffCharPos: number = login.indexOf(config.poolServer.fixedDiff.addressSeparator);
                 if (fixedDiffCharPos != -1) {
-                    noRetarget = true
-                    difficulty = login.substr(fixedDiffCharPos + 1)
+                    noRetarget = true;
+                    difficulty = login.substr(fixedDiffCharPos + 1);
                     if (difficulty < config.poolServer.varDiff.minDiff)
                         difficulty = config.poolServer.varDiff.minDiff;
                     
@@ -572,9 +561,9 @@ function handleMinerMethod(method: string, params: any, ip: any, portData: any, 
                 sendReply('your IP is banned');
                 return;
             }
-            var minerId = utils.uid()
+            var minerId = utils.uid();
             miner = new Miner(minerId, login, workerName, params.pass, ip, difficulty, noRetarget, pushMessage);
-            connectedMiners[minerId] = miner
+            connectedMiners[minerId] = miner;
             sendReply(null, {
                 id: minerId,
                 job: miner.getJob(),

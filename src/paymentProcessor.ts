@@ -1,8 +1,6 @@
 import fs from 'fs';
 import async from 'async';
-import cfg from './configReader';
 import apiInterfaces from './apiInterfaces';
-//import { Logger } from './logger';
 import { GlobalState } from './globalstate';
 let Logger = GlobalState.Logger;
 let config = GlobalState.config.config;
@@ -10,11 +8,6 @@ let redisClient = GlobalState.redisClient;
 //var fs = require('fs')
 //var async = require('async')
 //var apiInterfaces = require('./apiInterfaces.js')(config.daemon, config.wallet, config.api)
-
-// TODO: better usage than global
-//import { Global } from './defines';
-
-//const globalAny: Global = <Global>global;
 
 let api = new apiInterfaces(config.daemon, config.wallet, config.api);
 

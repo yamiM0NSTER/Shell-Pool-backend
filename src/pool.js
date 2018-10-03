@@ -27,9 +27,7 @@ var cnUtil = require('turtlecoin-cryptonote-util');
 // let redisClient = globalAny.redisClient;
 const globalstate_1 = require("./globalstate");
 let config = globalstate_1.GlobalState.config.config;
-let donations = globalstate_1.GlobalState.config.donations;
 let redisClient = globalstate_1.GlobalState.redisClient;
-//import { Logger } from './logger';
 // Must exactly be 8 hex chars
 var noncePattern = new RegExp('^[0-9A-Fa-f]{8}$');
 var threadId = '(Thread ' + process.env.forkId + ') ';
@@ -60,9 +58,9 @@ var perIPStats = {};
 var banningEnabled = config.poolServer.banning && config.poolServer.banning.enabled;
 var addressBase58Prefix = cnUtil.address_decode(new Buffer(config.poolServer.poolAddress));
 setInterval(function () {
-    var now = Date.now() / 1000 | 0;
+    let now = Date.now() / 1000 | 0;
     for (var minerId in connectedMiners) {
-        var miner = connectedMiners[minerId];
+        let miner = connectedMiners[minerId];
         if (!miner.noRetarget) {
             miner.retarget(now);
         }
@@ -74,7 +72,7 @@ setInterval(function () {
     var dateNowSeconds = now / 1000 | 0;
     var timeout = config.poolServer.minerTimeout * 1000;
     for (var minerId in connectedMiners) {
-        var miner = connectedMiners[minerId];
+        let miner = connectedMiners[minerId];
         if (now - miner.lastBeat > timeout) {
             log('warn', logSystem, 'Miner timed out and disconnected %s@%s', [miner.login, miner.ip]);
             delete connectedMiners[minerId];
@@ -175,7 +173,7 @@ function processBlockTemplate(template) {
     }
     currentBlockTemplate = new BlockTemplate(template);
     for (var minerId in connectedMiners) {
-        var miner = connectedMiners[minerId];
+        let miner = connectedMiners[minerId];
         miner.pushMessage('job', miner.getJob());
     }
 }
@@ -441,7 +439,7 @@ function processShare(miner, job, blockTemplate, nonce, resultHash) {
     return true;
 }
 function handleMinerMethod(method, params, ip, portData, sendReply, pushMessage) {
-    var miner = connectedMiners[params.id];
+    let miner = connectedMiners[params.id];
     // Check for ban here, so preconnected attackers can't continue to screw you
     if (IsBannedIp(ip)) {
         sendReply('your IP is banned');
@@ -473,7 +471,7 @@ function handleMinerMethod(method, params, ip, portData, sendReply, pushMessage)
                 log('info', logSystem, 'Miner %s uses worker name: %s', [login, workerName]);
             }
             if (config.poolServer.fixedDiff.enabled) {
-                var fixedDiffCharPos = login.indexOf(config.poolServer.fixedDiff.addressSeparator);
+                let fixedDiffCharPos = login.indexOf(config.poolServer.fixedDiff.addressSeparator);
                 if (fixedDiffCharPos != -1) {
                     noRetarget = true;
                     difficulty = login.substr(fixedDiffCharPos + 1);

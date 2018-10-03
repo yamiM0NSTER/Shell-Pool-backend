@@ -113,7 +113,7 @@
         "password": "your_password"
     },
     "daemon": {
-        "host": "127.0.0.1",
+        "host": "192.168.10.23",
         "port": 11898
     },
     "wallet": {

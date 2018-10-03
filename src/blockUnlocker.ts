@@ -7,15 +7,8 @@ let config = GlobalState.config.config;
 let donations: any = GlobalState.config.donations;
 let redisClient = GlobalState.redisClient;
 
-// let config = globalAny.config.config;
-// let donations: any = globalAny.config.donations;
-// let redisClient = globalAny.redisClient;
-// import { Logger } from './logger';
-// globalAny.Logger = Logger;
-
 var log = function (severity: any, system: any, text: any, data?: any) {
     GlobalState.Logger.Log(severity, system, text, data);
-    //global.log(severity, system, threadId + text, data)
 }
 import apiInterfaces from './apiInterfaces';
 let api = new apiInterfaces(config.daemon, config.wallet, config.api);
@@ -28,7 +21,6 @@ log('info', logSystem, 'Started')
 
 function runInterval() {
     async.waterfall([
-
         // Get all block candidates in redis
         function (callback: any) {
             redisClient.zrange(config.coin + ':blocks:candidates', 0, -1, 'WITHSCORES', function (error: any, results: string[]) {

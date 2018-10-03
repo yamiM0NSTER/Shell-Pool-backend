@@ -1,0 +1,63 @@
+2018-10-03 08:31:47
+TypeError: Cannot read property 'daemonConfig' of undefined
+    at rpcDaemon (d:\Projects\ShellPool\src\apiInterfaces.js:151:18)
+    at Timeout._onTimeout (d:\Projects\ShellPool\src\api.js:554:9)
+    at ontimeout (timers.js:498:11)
+    at tryOnTimeout (timers.js:323:5)
+    at Timer.listOnTimeout (timers.js:290:5)
+
+2018-10-03 08:31:47
+TypeError: Cannot read property 'walletConfig' of undefined
+    at rpcWallet (d:\Projects\ShellPool\src\apiInterfaces.js:154:18)
+    at Timeout._onTimeout (d:\Projects\ShellPool\src\api.js:554:9)
+    at ontimeout (timers.js:498:11)
+    at tryOnTimeout (timers.js:323:5)
+    at Timer.listOnTimeout (timers.js:290:5)
+    at listOnTimeoutNT (timers.js:369:26)
+    at _combinedTickCallback (internal/process/next_tick.js:136:11)
+    at Immediate._tickCallback [as _onImmediate] (internal/process/next_tick.js:181:9)
+    at runCallback (timers.js:810:20)
+    at tryOnImmediate (timers.js:768:5)
+
+2018-10-03 08:32:52
+TypeError: Cannot read property 'daemonConfig' of undefined
+    at rpcDaemon (d:\Projects\ShellPool\src\apiInterfaces.js:151:18)
+    at Timeout._onTimeout (d:\Projects\ShellPool\src\api.js:554:9)
+    at ontimeout (timers.js:498:11)
+    at tryOnTimeout (timers.js:323:5)
+    at Timer.listOnTimeout (timers.js:290:5)
+
+2018-10-03 08:32:52
+TypeError: Cannot read property 'walletConfig' of undefined
+    at rpcWallet (d:\Projects\ShellPool\src\apiInterfaces.js:154:18)
+    at Timeout._onTimeout (d:\Projects\ShellPool\src\api.js:554:9)
+    at ontimeout (timers.js:498:11)
+    at tryOnTimeout (timers.js:323:5)
+    at Timer.listOnTimeout (timers.js:290:5)
+    at listOnTimeoutNT (timers.js:369:26)
+    at _combinedTickCallback (internal/process/next_tick.js:136:11)
+    at Immediate._tickCallback [as _onImmediate] (internal/process/next_tick.js:181:9)
+    at runCallback (timers.js:810:20)
+    at tryOnImmediate (timers.js:768:5)
+
+2018-10-03 08:33:57
+TypeError: Cannot read property 'daemonConfig' of undefined
+    at rpcDaemon (d:\Projects\ShellPool\src\apiInterfaces.js:151:18)
+    at Timeout._onTimeout (d:\Projects\ShellPool\src\api.js:554:9)
+    at ontimeout (timers.js:498:11)
+    at tryOnTimeout (timers.js:323:5)
+    at Timer.listOnTimeout (timers.js:290:5)
+
+2018-10-03 08:33:57
+TypeError: Cannot read property 'walletConfig' of undefined
+    at rpcWallet (d:\Projects\ShellPool\src\apiInterfaces.js:154:18)
+    at Timeout._onTimeout (d:\Projects\ShellPool\src\api.js:554:9)
+    at ontimeout (timers.js:498:11)
+    at tryOnTimeout (timers.js:323:5)
+    at Timer.listOnTimeout (timers.js:290:5)
+    at listOnTimeoutNT (timers.js:369:26)
+    at _combinedTickCallback (internal/process/next_tick.js:136:11)
+    at Immediate._tickCallback [as _onImmediate] (internal/process/next_tick.js:181:9)
+    at runCallback (timers.js:810:20)
+    at tryOnImmediate (timers.js:768:5)
+

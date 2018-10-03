@@ -9,14 +9,8 @@ const globalstate_1 = require("./globalstate");
 let config = globalstate_1.GlobalState.config.config;
 let donations = globalstate_1.GlobalState.config.donations;
 let redisClient = globalstate_1.GlobalState.redisClient;
-// let config = globalAny.config.config;
-// let donations: any = globalAny.config.donations;
-// let redisClient = globalAny.redisClient;
-// import { Logger } from './logger';
-// globalAny.Logger = Logger;
 var log = function (severity, system, text, data) {
     globalstate_1.GlobalState.Logger.Log(severity, system, text, data);
-    //global.log(severity, system, threadId + text, data)
 };
 const apiInterfaces_1 = __importDefault(require("./apiInterfaces"));
 let api = new apiInterfaces_1.default(config.daemon, config.wallet, config.api);

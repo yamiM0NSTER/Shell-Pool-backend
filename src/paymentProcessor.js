@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const async_1 = __importDefault(require("async"));
 const apiInterfaces_1 = __importDefault(require("./apiInterfaces"));
-//import { Logger } from './logger';
 const globalstate_1 = require("./globalstate");
 let Logger = globalstate_1.GlobalState.Logger;
 let config = globalstate_1.GlobalState.config.config;
@@ -13,9 +12,6 @@ let redisClient = globalstate_1.GlobalState.redisClient;
 //var fs = require('fs')
 //var async = require('async')
 //var apiInterfaces = require('./apiInterfaces.js')(config.daemon, config.wallet, config.api)
-// TODO: better usage than global
-//import { Global } from './defines';
-//const globalAny: Global = <Global>global;
 let api = new apiInterfaces_1.default(config.daemon, config.wallet, config.api);
 var logSystem = 'payments';
 require('./exceptionWriter.js')(logSystem);

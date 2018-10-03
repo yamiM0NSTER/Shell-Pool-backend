@@ -1,17 +1,10 @@
 //import cluster from 'cluster';
 import os from 'os';
-import redis from 'redis';
-
 import { GlobalState } from './src/globalstate';
 
 let config = GlobalState.config.config;
 let donations: any = GlobalState.config.donations;
 let redisClient = GlobalState.redisClient;
-
-import Config from './src/configReader';
-import { Global } from './src/defines';
-
-//let config = globalAny.config.config;
 
 const cluster = require('cluster');
 //var os = require('os');
@@ -92,8 +85,8 @@ import apiInterfaces from './src/apiInterfaces';
 //msg = 'ddd';
 
 
-require('./src/configReader.js');
-require('./src/logger.js');
+//require('./src/configReader.js');
+//require('./src/logger.js');
 //require('./lib/configReader1.js');
 
 //require('./lib/logger.js');

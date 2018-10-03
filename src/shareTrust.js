@@ -1,11 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-//import cfg from './configReader';
-//import { Logger } from './logger';
 const globalstate_1 = require("./globalstate");
 let Logger = globalstate_1.GlobalState.Logger;
 let config = globalstate_1.GlobalState.config.config;
-const globalAny = global;
 let minerShareTrust = {
     ip: {},
     address: {}
