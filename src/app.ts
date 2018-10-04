@@ -1,11 +1,12 @@
 //import cluster from 'cluster';
 import os from 'os';
-import { GlobalState } from './src/globalstate';
+import { GlobalState } from './lib/globalstate';
 
 let config = GlobalState.config.config;
 let donations: any = GlobalState.config.donations;
 let redisClient = GlobalState.redisClient;
 
+//import cluster from 'cluster'
 const cluster = require('cluster');
 //var os = require('os');
 //var redis = require('redis');
@@ -19,64 +20,6 @@ const cluster = require('cluster');
 // }
 //let redisClient = globalAny.redisClient;
 
-// import { Logger } from './src/logger';
-// if (!globalAny.Logger)
-//     globalAny.Logger = Logger;
-import './src/exceptionWriter';
-import './src/utils';
-import * as shareTrust from './src/shareTrust';
-import apiInterfaces from './src/apiInterfaces';
-
-
-// if (cluster.isMaster) {
-//     masterProcess();
-// } else {
-//     childProcess();
-// }
-
-// function masterProcess() {
-//     console.log(`Master ${process.pid} is running`);
-
-//     for (let i = 0; i < 10; i++) {
-//         console.log(`Forking process number ${i}...`);
-//         cluster.fork({
-//             workerType: 'pool',
-//             forkId: i.toString()
-//         });
-//     }
-
-//     process.exit();
-// }
-
-// function childProcess() {
-//     console.log(`Worker ${process.pid} started and finished`);
-
-//     process.exit();
-// }
-// console.log(msg);
-// console.log(msg);
-// console.log(msg);
-// console.log(msg);
-// console.log(msg);
-// console.log(`${msg}`);
-// let api = new apiInterfaces(globalAny.config.config.daemon, globalAny.config.config.wallet, globalAny.config.config.api);
-
-// function getCoinPrice(callback: Function) {
-//     api.jsonHttpRequest('api.cryptonator.com', 443, '', function (error: any, response: any) {
-//         callback(response.error ? response.error : error, response.success ? +response.ticker.price : null)
-//     }, '/api/ticker/' + globalAny.config.config.symbol.toLowerCase() + '-usd')
-// }
-
-// getCoinPrice(function (error: any, price: any) {
-//     if (error) {
-//         console.log(error);
-//         return;
-//     }
-//     else {
-//         console.log(price);
-//     }
-// });
-
 // console.log(shareTrust);
 //let validModules = ['pool', 'api', 'unlocker', 'payments', 'chartsDataCollector'];
 //let moduleName = 'whatever';
@@ -87,7 +30,6 @@ import apiInterfaces from './src/apiInterfaces';
 
 //require('./src/configReader.js');
 //require('./src/logger.js');
-//require('./lib/configReader1.js');
 
 //require('./lib/logger.js');
 
@@ -95,35 +37,30 @@ import apiInterfaces from './src/apiInterfaces';
 
 var log = function (severity: any, system: any, text: any, data?: any) {
     GlobalState.Logger.Log(severity, system, text, data);
-    //global.log(severity, system, threadId + text, data)
 }
 
-
 var logSystem = 'master';
-//require('./lib/exceptionWriter.js')(logSystem);
-require('./src/exceptionWriter.js')(logSystem);
-
-
+require('./lib/exceptionWriter.js')(logSystem);
 
 if (cluster.isWorker) {
     switch (process.env.workerType) {
         case 'pool':
-            require('./src/pool.js');
+            require('./lib/pool');
             break;
         case 'blockUnlocker':
-            require('./src/blockUnlocker.js');
+            require('./lib/blockUnlocker.js');
             break;
         case 'paymentProcessor':
-            require('./src/paymentProcessor.js');
+            require('./lib/paymentProcessor.js');
             break;
         case 'api':
-            require('./src/api.js');
+            require('./lib/api.js');
             break;
         case 'cli':
-            require('./src/cli.js');
+            require('./lib/cli.js');
             break
         case 'chartsDataCollector':
-            require('./src/chartsDataCollector.js');
+            require('./lib/chartsDataCollector.js');
             break
 
     }
@@ -185,24 +122,22 @@ var singleModule = (function () {
         }
 
         spawnCli();
-
     });
 })();
 
 
 function checkRedisVersion(callback: any) {
-
     redisClient.info(function (error: any, response: any) {
         if (error) {
             log('error', logSystem, 'Redis version check failed');
             return;
         }
-        var parts = response.split('\r\n');
-        var version;
-        var versionString;
-        for (var i = 0; i < parts.length; i++) {
+        let parts = response.split('\r\n');
+        let version: number | undefined;
+        let versionString;
+        for (let i = 0; i < parts.length; i++) {
             if (parts[i].indexOf(':') !== -1) {
-                var valParts = parts[i].split(':');
+                let valParts = parts[i].split(':');
                 if (valParts[0] === 'redis_version') {
                     versionString = valParts[1];
                     version = parseFloat(versionString);

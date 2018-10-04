@@ -10,7 +10,7 @@
             "name": "Launch Program",
             "sourceMaps": true,
             "preLaunchTask": "npm: build",
-            "program": "${workspaceFolder}/app.js",
+            "program": "${workspaceFolder}/Build/app.js",
             "smartStep": true,
             "internalConsoleOptions": "openOnSessionStart",
             "autoAttachChildProcesses": true,

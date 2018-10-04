@@ -1,3 +1,7 @@
 node_modules/*
 src/*.js.map
 build/config.gypi
+build/*.js
+build/*.js.map
+build/lib/*.js
+build/lib/*.js.map

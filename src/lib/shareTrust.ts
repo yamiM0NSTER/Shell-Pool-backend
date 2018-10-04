@@ -32,6 +32,8 @@ let shareTrustEnabled = shareTrustConfig && shareTrustConfig.enabled;
 let shareTrustProbabilityStepPercent = shareTrustEnabled ? shareTrustConfig.probabilityStepPercent / 100 : 0;
 let shareTrustMaxTrustPercent = shareTrustEnabled ? shareTrustConfig.maxTrustPercent / 100 : 0;
 
+export let enabled = shareTrustEnabled;
+
 process.on('message', function (message) {
     switch (message.type) {
         case 'shareTrust':
@@ -74,7 +76,7 @@ setInterval(function () {
     }
 }, 300000)
 
-function isTrusted(ip: string, address: string): boolean {
+export function isTrusted(ip: string, address: string): boolean {
     let shareTrustIP = minerShareTrust.ip[ip];
     let shareTrustAddress = minerShareTrust.address[address];
     if (shareTrustIP && shareTrustAddress) {
@@ -83,7 +85,7 @@ function isTrusted(ip: string, address: string): boolean {
     return false;
 }
 
-function checkTrust(ip: string, address: string, difficulty: number): boolean {
+export function checkTrust(ip: string, address: string, difficulty: number): boolean {
     let dateNowSeconds = Date.now() / 1000 | 0
     let shareTrustIP = minerShareTrust.ip[ip];
     let shareTrustAddress = minerShareTrust.address[address];
@@ -107,7 +109,7 @@ function checkTrust(ip: string, address: string, difficulty: number): boolean {
     return false;
 }
 
-function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: boolean) {
+export function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: boolean = false) {
     let dateNowSeconds: number = Date.now() / 1000 | 0;
 
     // TODO: fix this puke-worthy function
@@ -144,9 +146,6 @@ function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: b
 
     let shareTrustIP = minerShareTrust.ip[ip];
     let shareTrustAddress = minerShareTrust.address[address];
-    if (isIPC === undefined) {
-        isIPC = false;
-    }
 
     if (shareTrustIP && shareTrustAddress) {
         if (shareValidated) {
@@ -234,9 +233,9 @@ function setTrust(ip: string, address: string, shareValidated: boolean, isIPC: b
     }
 }
 
-module.exports = {
-    enabled: shareTrustEnabled,
-    isTrusted: isTrusted,
-    checkTrust: checkTrust,
-    setTrust: setTrust
-}
+// module.exports = {
+//     enabled: shareTrustEnabled,
+//     isTrusted: isTrusted,
+//     checkTrust: checkTrust,
+//     setTrust: setTrust
+// }
