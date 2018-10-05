@@ -5,3 +5,4 @@ build/*.js
 build/*.js.map
 build/lib/*.js
 build/lib/*.js.map
+logs/*

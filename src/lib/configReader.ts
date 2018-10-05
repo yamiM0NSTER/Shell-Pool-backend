@@ -4,7 +4,7 @@ class Config {
     private static _instance: Config;
     config: any;
 
-    constructor() {
+    private constructor() {
         this.config = undefined;
         this.ReadConfig();
     }
@@ -19,7 +19,7 @@ class Config {
             this.config = JSON.parse(fs.readFileSync(this.GetConfigFileName()).toString());
         }
         catch (e) {
-            console.error('Failed to read config file: ' + this.GetConfigFileName() + '\n\n' + e);
+            console.error(`Failed to read config file: ${process.cwd()}\\${this.GetConfigFileName()}\n\n${e}\n`);
             return;
         }
 
@@ -42,9 +42,11 @@ class Config {
     
     donationAddresses: any = {
         devDonation: {
+            TRTL:'TRTLv2W4CeN1M5QMFSBmvrLrsYZLinigobCRpYv6H25AHyrAX1j7Y1L94tsydJZ8A2b9Jc4EELVVgEakdjYeZNm5EcXvKE1384R',
             XMR: '45Jmf8PnJKziGyrLouJMeBFw2yVyX1QB52sKEQ4S1VSU2NVsaVGPNu4bWKkaHaeZ6tWCepP6iceZk8XhTLzDaEVa72QrtVh'
         },
         coreDevDonation: {
+            TRTL:'TRTLv2W4CeN1M5QMFSBmvrLrsYZLinigobCRpYv6H25AHyrAX1j7Y1L94tsydJZ8A2b9Jc4EELVVgEakdjYeZNm5EcXvKE1384R',
             BCN: '252m7ru3wT5McAUztrZDExJ9PgnmyJVgk2ayucQLt13dFrf5DE4SrSBVkbtVhvZbRj1Ty4cVWaE6MGDVArZLpuMhCkrvToA',
             BBR: '@zoidberg',
             XMR: '46BeWrHpwXmHDpDEUmZBWZfoQpdc6HaERCNmx1pEYL2rAcuwufPN9rXHHtyUA4QVy66qeFQkn6sfK8aHYjA3jk3o1Bv16em',

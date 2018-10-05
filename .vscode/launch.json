@@ -9,6 +9,7 @@
             "request": "launch",
             "name": "Launch Program",
             "sourceMaps": true,
+            "cwd": "${workspaceFolder}/Build",
             "preLaunchTask": "npm: build",
             "program": "${workspaceFolder}/Build/app.js",
             "smartStep": true,

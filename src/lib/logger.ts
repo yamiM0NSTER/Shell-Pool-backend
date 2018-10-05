@@ -1,11 +1,7 @@
-//import cfg from "./configReader";
 import fs from 'fs';
 import util from 'util';
 import dateFormat from 'dateformat';
 import clc from 'cli-color';
-
-import { Global } from './defines';
-const globalAny: Global = <Global>global;
 
 type SeverityMap = {
     [key: string]: clc.Format;
@@ -27,7 +23,7 @@ class LoggerClass {
 
     pendingWrites: { [name: string]: string } = {};
 
-    constructor() {
+    private constructor() {
         this.config = undefined;
     }
 

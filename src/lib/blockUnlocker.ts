@@ -153,8 +153,8 @@ function runInterval() {
             var totalBlocksUnlocked = 0;
             blocks.forEach(function (block: any) {
                 if (block.orphaned)
-                    return
-                totalBlocksUnlocked++
+                    return;
+                totalBlocksUnlocked++;
 
                 unlockedBlocksCommands.push(['del', config.coin + ':shares:round' + block.height])
                 unlockedBlocksCommands.push(['zrem', config.coin + ':blocks:candidates', block.serialized])
@@ -165,9 +165,9 @@ function runInterval() {
                     block.shares,
                     block.orphaned,
                     block.reward
-                ].join(':')])
+                ].join(':')]);
 
-                var feePercent = config.blockUnlocker.poolFee / 100
+                var feePercent = config.blockUnlocker.poolFee / 100;
 
                 if (Object.keys(donations).length) {
                     for (var wallet in donations) {

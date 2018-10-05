@@ -27,8 +27,6 @@ const cluster = require('cluster');
 //console.log(cfg.config);
 //msg = 'ddd';
 
-
-//require('./src/configReader.js');
 //require('./src/logger.js');
 
 //require('./lib/logger.js');
